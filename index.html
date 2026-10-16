@@ -11,7 +11,7 @@ h1{font-size:34px;line-height:1.05}h1 span{color:var(--y)}h2{font-size:20px;marg
 .sub{color:var(--m);margin:6px 0 18px}
 .card{background:var(--c2);border-radius:14px;padding:16px;margin-bottom:14px;border:1px solid var(--c3)}
 label{display:block;font-size:12px;font-weight:600;color:var(--m);text-transform:uppercase;letter-spacing:1px;margin:0 0 6px}
-input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--c3);background:#141416;color:var(--t);font:inherit;font-size:16px}
+input,select{background-color:#141416;width:100%;appearance:none;background-image:linear-gradient(45deg,transparent 50%,#FFCB00 50%),linear-gradient(135deg,#FFCB00 50%,transparent 50%);background-position:calc(100% - 20px) 50%,calc(100% - 14px) 50%;background-size:6px 6px;background-repeat:no-repeat;padding:12px;border-radius:10px;border:1px solid var(--c3);background:#141416;color:var(--t);font:inherit;font-size:16px}
 .f{margin-bottom:14px}.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .seg button{padding:12px 4px;border-radius:10px;border:1px solid var(--c3);background:#141416;color:var(--t);font:600 13px Inter;cursor:pointer}
 .seg button.on{background:var(--y);color:#111;border-color:var(--y)}
@@ -32,7 +32,7 @@ tr.h td{color:var(--y);font-weight:700;text-transform:uppercase;font-size:11px;l
 <div class="grid"><div>
 <div class="card">
  <div class="f"><label for="len">Wall length (m)</label><input id="len" type="number" inputmode="decimal" min="0" step="0.5" value="10"></div>
- <div class="f"><label>Wall height (m)</label><div class="seg hgt" id="hgt"></div></div>
+ <div class="f"><label>Wall height (m)</label><select id="hgt"></select><div class="note" id="hnote" style="margin-top:6px;color:var(--y)"></div></div>
  <div class="f" style="margin:0"><label>Wall type</label><div class="seg" id="type">
   <button data-v="galfan" class="on">Gabion Galfan</button><button data-v="galvanised">Gabion galvanised</button><button data-v="limestone">Limestone</button></div></div>
 </div>
@@ -55,14 +55,15 @@ var n2=function(n,d){return (+n).toLocaleString("en-AU",{maximumFractionDigits:d
 function buildRates(){var h="";Object.keys(LABELS).forEach(function(k){h+='<div><label>'+LABELS[k]+'</label><input data-k="'+k+'" type="number" step="any" value="'+R[k]+'"></div>'});
  Object.keys(R.blocksPerMetre).forEach(function(k){h+='<div><label>Blocks/m @ '+k+' m</label><input data-b="'+k+'" type="number" step="any" value="'+R.blocksPerMetre[k]+'"></div>'});
  document.getElementById("rates").innerHTML=h;}
-function buildH(){document.getElementById("hgt").innerHTML=Object.keys(R.blocksPerMetre).map(Number).sort(function(a,b){return a-b}).map(function(h){return '<button data-v="'+h+'" class="'+(h==H?"on":"")+'">'+h.toFixed(1)+'</button>'}).join("");}
+function buildH(){var o="";for(var i=4;i<=30;i++){var v=(i/10).toFixed(1);o+='<option value="'+v+'"'+(+v==H?" selected":"")+'>'+v+' m</option>'}document.getElementById("hgt").innerHTML=o;}
 function row(a,b,c){return '<tr'+(c?' class="'+c+'"':'')+'><td>'+a+'</td><td>'+(b==null?"":b)+'</td></tr>'}
 function render(){var L=+document.getElementById("len").value||0,internal=document.getElementById("internal").checked,q;
  try{q=calcQuote(L,H,T,R)}catch(e){document.getElementById("tval").textContent="–";document.getElementById("bd").innerHTML=row(e.message);return}
  var names={galfan:"Gabion wall – Galfan mesh",galvanised:"Gabion wall – galvanised mesh",limestone:"Limestone block wall"};
  document.getElementById("tval").textContent=$(q.quoteInc);
- document.getElementById("tsub").textContent=names[T]+" · "+n2(L)+" m × "+H.toFixed(1)+" m ("+n2(q.faceArea)+" m²)";
- var h=row("Wall",null,"h")+row("Layers (0.5 m cages)",T=="limestone"?"–":q.layers)+row("Face area",n2(q.faceArea)+" m²");
+ document.getElementById("tsub").textContent=names[T]+" · "+n2(L)+" m × "+H.toFixed(1)+" m";
+ var nt=q.heightAdjusted?"Priced as a "+q.pricedHeight.toFixed(1)+" m wall, "+H.toFixed(1)+" m visible, extra buried.":"";document.getElementById("hnote").textContent=nt;if(nt)document.getElementById("tsub").textContent+=" · "+nt;
+ var h=row("Wall",null,"h")+(internal?row("Visible height",H.toFixed(1)+" m")+row("Priced height",q.pricedHeight.toFixed(1)+" m"):"")+row("Layers (0.5 m cages)",T=="limestone"?"–":q.layers)+row("Face area",n2(q.faceArea)+" m²");
  if(internal){
   if(q.mesh){h+=row("Mesh",null,"h");if(T=="galfan"){h+=row("Galfan $/m of wall",$(q.mesh.perMetre))+row("1.0×0.5 panels (front/back/base + lid)",q.mesh.panels1x05)+row("0.5×0.5 baffles",q.mesh.baffles05x05)+row("Brace hooks",q.hooks)}else{h+=row("Mesh area incl. waste",n2(q.mesh.areaM2)+" m²")+row("2.4×4.5 sheets",q.mesh.sheets)}
    h+=row("Mesh cost",$(q.mesh.cost))+row("Clips / spirals (estimate)",$(q.clips));
@@ -76,7 +77,7 @@ function render(){var L=+document.getElementById("len").value||0,internal=docume
   h+=row("Supply &amp; install, inc GST",$(q.quoteInc));
  }
  document.getElementById("bd").innerHTML=h;}
-document.getElementById("hgt").onclick=function(e){if(e.target.dataset.v){H=+e.target.dataset.v;buildH();render()}};
+document.getElementById("hgt").onchange=function(){H=+this.value;render()};
 document.getElementById("type").onclick=function(e){if(!e.target.dataset.v)return;T=e.target.dataset.v;[].forEach.call(this.children,function(b){b.classList.toggle("on",b.dataset.v==T)});render()};
 document.getElementById("len").oninput=render;document.getElementById("internal").onchange=render;
 document.getElementById("rates").oninput=function(e){var t=e.target,v=parseFloat(t.value);if(isNaN(v))return;if(t.dataset.k)R[t.dataset.k]=v;else R.blocksPerMetre[t.dataset.b]=v;localStorage.setItem(KEY,JSON.stringify(R));render()};

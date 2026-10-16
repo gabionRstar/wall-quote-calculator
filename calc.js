@@ -22,7 +22,11 @@ function lookupBlocks(r, h) { var k = String(+h); var v = r.blocksPerMetre[k]; i
 function calcQuote(length, height, type, rates) {
   var r = Object.assign({}, DEFAULT_RATES, rates || {});
   if (rates && rates.blocksPerMetre) r.blocksPerMetre = rates.blocksPerMetre;
-  var L = +length, H = +height, layers = H / r.layerHeight, face = L * H;
+  var visibleHeight = +height;
+  if (!(visibleHeight >= 0.4 && visibleHeight <= 3.0)) throw new Error("Height must be 0.4–3.0 m");
+  // Josh's rule: price in-between heights at the next 0.5 m cage step up (extra buried), capped at 3.0 m
+  var pricedHeight = Math.min(3.0, roundUp(visibleHeight / 0.5) * 0.5);
+  var L = +length, H = pricedHeight, layers = H / r.layerHeight, face = L * H;
   // Galfan mesh $/m/layer = front+back+base (1.0x0.5) + baffle (0.5x0.5) + hooks
   var galfanPerLayer = r.panel1x05 * 3 + r.panel05x05 + r.hooksPerLayerPerM * r.braceHook;
   var galfanPerM = layers * galfanPerLayer + r.panel1x05;           // + top lid
@@ -45,7 +49,7 @@ function calcQuote(length, height, type, rates) {
   else { meshCost = 0; cost = limeBlockCost + limeLabour; quoteEx = limeQuote; } // limestone cost = blocks@cost + labour (not in sheet)
   var profit = quoteEx - cost, margin = quoteEx === 0 ? 0 : profit / quoteEx;
   return {
-    input: { length: L, height: H, type: type }, layers: layers, faceArea: face,
+    input: { length: L, height: visibleHeight, type: type }, visibleHeight: visibleHeight, pricedHeight: pricedHeight, heightAdjusted: pricedHeight !== visibleHeight, layers: layers, faceArea: face,
     mesh: type === "galfan" ? { kind: "Galfan panels", perMetre: galfanPerM, panels1x05: galfanPanels1x05, baffles05x05: galfanBaffles, hooks: hooks, cost: meshCost }
         : type === "galvanised" ? { kind: "Galvanised sheets 2.4x4.5", areaM2: galvArea, sheets: galvSheets, cost: meshCost } : null,
     hooks: type === "galfan" ? hooks : 0,
