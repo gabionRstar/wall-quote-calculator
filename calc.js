@@ -27,7 +27,7 @@ var DEFAULT_RATES = {
   dayRate: 1800, limestoneM2PerDay: 18, gabionTimeMultiplier: 2, dayRounding: 0.5,
   blockSell: 90, blockCost: 30,
   blocksPerMetre: limestoneTable(),   // from original limestone calculator (was sheet: 3.5/5/7/14.5/19/25)
-  earthworksFee: 3000, earthworksMaxLength: 50, extraPct: 0.20, earthworksCost: 0, engineeringFee: 2350, // engineering & site approval, included INSIDE the 20% PM line // earthworks cost assumed $0 (not in sheet)
+  earthworksFee: 3000, earthworksMaxLength: 50, extraPct: 0.10, pmOptions: [0.05, 0.10, 0.15, 0.20], earthworksCost: 0, engineeringFee: 2350, // engineering & site approval, included INSIDE the 20% PM line // earthworks cost assumed $0 (not in sheet)
   galvFactor: 1.05, galfanFactor: 1.15, gst: 0.10, minMargin: 0.20
 };
 function roundUp(x, d) { var f = Math.pow(10, d || 0); return Math.ceil(+(x * f).toFixed(9)) / f; }

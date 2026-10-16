@@ -15,7 +15,7 @@ input,select{background-color:#141416;width:100%;appearance:none;background-imag
 .f{margin-bottom:14px}.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .seg button{padding:12px 4px;border-radius:10px;border:1px solid var(--c3);background:#141416;color:var(--t);font:600 13px Inter;cursor:pointer}
 .seg button.on{background:var(--y);color:#111;border-color:var(--y)}
-.hgt{grid-template-columns:repeat(6,1fr)}
+.pm{grid-template-columns:repeat(4,1fr)}.hgt{grid-template-columns:repeat(6,1fr)}
 .total{background:var(--y);color:#111;border-radius:14px;padding:18px;margin-bottom:14px}
 .total .k{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
 .total .v{font-family:Anton,sans-serif;font-size:46px;line-height:1.1}.total .s{font-size:13px}
@@ -39,6 +39,7 @@ tr.h td{color:var(--y);font-weight:700;text-transform:uppercase;font-size:11px;l
 <label class="toggle"><input type="checkbox" id="internal" checked> Show internal cost &amp; margin (Josh's view)</label>
 </div><div>
 <div class="total"><div class="k" id="tlabel">Quote inc GST</div><div class="v" id="tval">$0</div><div class="s" id="tsub"></div></div>
+<div class="card"><label>Project management %</label><div class="seg pm" id="pmseg"></div></div>
 <div class="card"><h2>Breakdown</h2><table id="bd"></table></div>
 </div></div>
 <div class="card"><details><summary>Rates</summary>
@@ -47,7 +48,7 @@ tr.h td{color:var(--y);font-weight:700;text-transform:uppercase;font-size:11px;l
 <p class="note">Formulas mirror the "Gabion Wall Quote Calculator (2026)" Google Sheet. Clips allowance is an estimate; geotextile is $0 until priced; 2.5 m / 3.0 m block rates are flagged to verify.</p>
 </div>
 <script src="calc.js"></script><script>
-var KEY="wqc-rates-v1",LABELS={layerHeight:"Layer height m",panel05x05:"Galfan 0.5x0.5 $",panel05x1:"Galfan 0.5x1 $",panel1x05:"Galfan 1x0.5 $",panel1x1:"Galfan 1x1 $",panel2x05:"Galfan 2x0.5 $",panel2x1:"Galfan 2x1 $",braceHook:"Brace hook $",hooksPerLayerPerM:"Hooks /layer/m",sheetLength:"Galv sheet L m",sheetWidth:"Galv sheet W m",sheetPrice:"Galv sheet $",meshFront:"Front m²/layer/m",meshBack:"Back m²/layer/m",meshBase:"Base m²/layer/m",meshBaffle:"Baffle m²/layer/m",meshLid:"Lid m²/m",meshWaste:"Mesh waste (0.1=10%)",clipsPerLayerPerM:"Clips $/layer/m",rockLoadPrice:"Rock $/load",rockLoadTonnes:"Load tonnes",rockDensity:"Rock t/m³",rockM3PerLayerPerM:"Rock m³/layer/m",rockBuffer:"Rock buffer (0.075)",geoMetresPerRoll:"Geotex m/roll",geoRollPrice:"Geotex $/roll",dayRate:"Labour $/day",limestoneM2PerDay:"Limestone m²/day",gabionTimeMultiplier:"Gabion time x",dayRounding:"Round days to",blockSell:"Block sell $",blockCost:"Block cost $",earthworksFee:"Earthworks $ ex GST",earthworksMaxLength:"Earthworks if length ≤ m",extraPct:"Project mgmt % (0.2)",engineeringFee:"Engineering &amp; approval $ (in PM)",earthworksCost:"Earthworks cost $",galvFactor:"Galv quote x lime",galfanFactor:"Galfan x galv",gst:"GST (0.1)",minMargin:"Min margin (0.2)"};
+var KEY="wqc-rates-v2",LABELS={layerHeight:"Layer height m",panel05x05:"Galfan 0.5x0.5 $",panel05x1:"Galfan 0.5x1 $",panel1x05:"Galfan 1x0.5 $",panel1x1:"Galfan 1x1 $",panel2x05:"Galfan 2x0.5 $",panel2x1:"Galfan 2x1 $",braceHook:"Brace hook $",hooksPerLayerPerM:"Hooks /layer/m",sheetLength:"Galv sheet L m",sheetWidth:"Galv sheet W m",sheetPrice:"Galv sheet $",meshFront:"Front m²/layer/m",meshBack:"Back m²/layer/m",meshBase:"Base m²/layer/m",meshBaffle:"Baffle m²/layer/m",meshLid:"Lid m²/m",meshWaste:"Mesh waste (0.1=10%)",clipsPerLayerPerM:"Clips $/layer/m",rockLoadPrice:"Rock $/load",rockLoadTonnes:"Load tonnes",rockDensity:"Rock t/m³",rockM3PerLayerPerM:"Rock m³/layer/m",rockBuffer:"Rock buffer (0.075)",geoMetresPerRoll:"Geotex m/roll",geoRollPrice:"Geotex $/roll",dayRate:"Labour $/day",limestoneM2PerDay:"Limestone m²/day",gabionTimeMultiplier:"Gabion time x",dayRounding:"Round days to",blockSell:"Block sell $",blockCost:"Block cost $",earthworksFee:"Earthworks $ ex GST",earthworksMaxLength:"Earthworks if length ≤ m",extraPct:"Project mgmt % (0.1)",engineeringFee:"Engineering &amp; approval $ (in PM)",earthworksCost:"Earthworks cost $",galvFactor:"Galv quote x lime",galfanFactor:"Galfan x galv",gst:"GST (0.1)",minMargin:"Min margin (0.2)"};
 function load(){try{var s=JSON.parse(localStorage.getItem(KEY));if(s)return Object.assign({},DEFAULT_RATES,s,{blocksPerMetre:Object.assign({},s.blocksPerMetre||DEFAULT_RATES.blocksPerMetre)});}catch(e){}return JSON.parse(JSON.stringify(DEFAULT_RATES));}
 var R=load(),H=1.5,T="galfan";
 var $=function(n){return n.toLocaleString("en-AU",{style:"currency",currency:"AUD",minimumFractionDigits:2,maximumFractionDigits:2})};
@@ -57,6 +58,7 @@ function buildRates(){var h="";Object.keys(LABELS).forEach(function(k){h+='<div>
  document.getElementById("rates").innerHTML=h;}
 function buildH(){var o="";for(var i=4;i<=30;i++){var v=(i/10).toFixed(1);o+='<option value="'+v+'"'+(+v==H?" selected":"")+'>'+v+' m</option>'}document.getElementById("hgt").innerHTML=o;}
 function row(a,b,c){return '<tr'+(c?' class="'+c+'"':'')+'><td>'+a+'</td><td>'+(b==null?"":b)+'</td></tr>'}
+function buildPM(){document.getElementById("pmseg").innerHTML=(R.pmOptions||DEFAULT_RATES.pmOptions).map(function(p){return '<button data-v="'+p+'" class="'+(Math.abs(p-R.extraPct)<1e-9?"on":"")+'">'+Math.round(p*100)+'%</button>'}).join("")}
 function render(){var L=+document.getElementById("len").value||0,internal=document.getElementById("internal").checked,q;
  try{q=calcQuote(L,H,T,R)}catch(e){document.getElementById("tval").textContent="–";document.getElementById("bd").innerHTML=row(e.message);return}
  var names={galfan:"Gabion wall – Galfan mesh",galvanised:"Gabion wall – galvanised mesh",limestone:"Limestone block wall"};
@@ -79,8 +81,9 @@ function render(){var L=+document.getElementById("len").value||0,internal=docume
  document.getElementById("bd").innerHTML=h;}
 document.getElementById("hgt").onchange=function(){H=+this.value;render()};
 document.getElementById("type").onclick=function(e){if(!e.target.dataset.v)return;T=e.target.dataset.v;[].forEach.call(this.children,function(b){b.classList.toggle("on",b.dataset.v==T)});render()};
+document.getElementById("pmseg").onclick=function(e){if(!e.target.dataset.v)return;R.extraPct=+e.target.dataset.v;localStorage.setItem(KEY,JSON.stringify(R));var i=document.querySelector('[data-k="extraPct"]');if(i)i.value=R.extraPct;buildPM();render()};
 document.getElementById("len").oninput=render;document.getElementById("internal").onchange=render;
-document.getElementById("rates").oninput=function(e){var t=e.target,v=parseFloat(t.value);if(isNaN(v))return;if(t.dataset.k)R[t.dataset.k]=v;else R.blocksPerMetre[t.dataset.b]=v;localStorage.setItem(KEY,JSON.stringify(R));render()};
-document.getElementById("reset").onclick=function(){localStorage.removeItem(KEY);R=load();buildRates();buildH();render()};
-buildRates();buildH();render();
+document.getElementById("rates").oninput=function(e){var t=e.target,v=parseFloat(t.value);if(isNaN(v))return;if(t.dataset.k)R[t.dataset.k]=v;else R.blocksPerMetre[t.dataset.b]=v;localStorage.setItem(KEY,JSON.stringify(R));buildPM();render()};
+document.getElementById("reset").onclick=function(){localStorage.removeItem(KEY);R=load();buildRates();buildH();buildPM();render()};
+buildRates();buildH();buildPM();render();
 </script></body></html>
