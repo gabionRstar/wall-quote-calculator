@@ -1,0 +1,85 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wall Quote Calculator – Gabion Fabrication</title><meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--y:#FFCB00;--c:#1d1d1f;--c2:#2a2a2d;--c3:#3a3a3e;--t:#f3f3f3;--m:#a8a8ad}
+*{box-sizing:border-box}body{margin:0;background:var(--c);color:var(--t);font:15px/1.45 Inter,system-ui,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 60px}
+h1,h2{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.5px;text-transform:uppercase;margin:0}
+h1{font-size:34px;line-height:1.05}h1 span{color:var(--y)}h2{font-size:20px;margin-bottom:10px}
+.brand{font-size:11px;letter-spacing:3px;color:var(--y);font-weight:700;margin-bottom:6px}
+.sub{color:var(--m);margin:6px 0 18px}
+.card{background:var(--c2);border-radius:14px;padding:16px;margin-bottom:14px;border:1px solid var(--c3)}
+label{display:block;font-size:12px;font-weight:600;color:var(--m);text-transform:uppercase;letter-spacing:1px;margin:0 0 6px}
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--c3);background:#141416;color:var(--t);font:inherit;font-size:16px}
+.f{margin-bottom:14px}.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg button{padding:12px 4px;border-radius:10px;border:1px solid var(--c3);background:#141416;color:var(--t);font:600 13px Inter;cursor:pointer}
+.seg button.on{background:var(--y);color:#111;border-color:var(--y)}
+.hgt{grid-template-columns:repeat(6,1fr)}
+.total{background:var(--y);color:#111;border-radius:14px;padding:18px;margin-bottom:14px}
+.total .k{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.total .v{font-family:Anton,sans-serif;font-size:46px;line-height:1.1}.total .s{font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:14px}td{padding:7px 0;border-bottom:1px solid var(--c3)}td:last-child{text-align:right;font-weight:600}
+tr.h td{color:var(--y);font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:1px;padding-top:14px}
+.warn{color:#ff7a59}.ok{color:#7ad97a}.toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--m);margin:4px 0 14px}.toggle input{width:auto}
+.rates{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}.rates label{font-size:10px;letter-spacing:.5px}.rates input{padding:8px;font-size:14px}
+.btn{background:transparent;border:1px solid var(--y);color:var(--y);padding:10px 14px;border-radius:10px;font:600 13px Inter;cursor:pointer;margin-top:12px}
+.note{font-size:12px;color:var(--m)}details summary{cursor:pointer;font-family:Anton;text-transform:uppercase;font-size:18px}
+@media(min-width:860px){.grid{display:grid;grid-template-columns:380px 1fr;gap:18px}h1{font-size:46px}.rates{grid-template-columns:repeat(4,1fr)}}
+</style></head><body><div class="wrap">
+<div class="brand">GABION FABRICATION · WA</div><h1>Wall <span>Quote</span> Calculator</h1>
+<p class="sub">Punch in the wall, get a quote. Customer price shown inc GST.</p>
+<div class="grid"><div>
+<div class="card">
+ <div class="f"><label for="len">Wall length (m)</label><input id="len" type="number" inputmode="decimal" min="0" step="0.5" value="10"></div>
+ <div class="f"><label>Wall height (m)</label><div class="seg hgt" id="hgt"></div></div>
+ <div class="f" style="margin:0"><label>Wall type</label><div class="seg" id="type">
+  <button data-v="galfan" class="on">Gabion Galfan</button><button data-v="galvanised">Gabion galvanised</button><button data-v="limestone">Limestone</button></div></div>
+</div>
+<label class="toggle"><input type="checkbox" id="internal" checked> Show internal cost &amp; margin (Josh's view)</label>
+</div><div>
+<div class="total"><div class="k" id="tlabel">Quote inc GST</div><div class="v" id="tval">$0</div><div class="s" id="tsub"></div></div>
+<div class="card"><h2>Breakdown</h2><table id="bd"></table></div>
+</div></div>
+<div class="card"><details><summary>Rates</summary>
+<p class="note">All ex GST. Changes save on this device only. Blocks/m table drives the limestone price (and so every gabion quote).</p>
+<div class="rates" id="rates"></div><button class="btn" id="reset">Reset to sheet rates</button></details></div>
+<p class="note">Formulas mirror the "Gabion Wall Quote Calculator (2026)" Google Sheet. Clips allowance is an estimate; geotextile is $0 until priced; 2.5 m / 3.0 m block rates are flagged to verify.</p>
+</div>
+<script src="calc.js"></script><script>
+var KEY="wqc-rates-v1",LABELS={layerHeight:"Layer height m",panel05x05:"Galfan 0.5x0.5 $",panel05x1:"Galfan 0.5x1 $",panel1x05:"Galfan 1x0.5 $",panel1x1:"Galfan 1x1 $",panel2x05:"Galfan 2x0.5 $",panel2x1:"Galfan 2x1 $",braceHook:"Brace hook $",hooksPerLayerPerM:"Hooks /layer/m",sheetLength:"Galv sheet L m",sheetWidth:"Galv sheet W m",sheetPrice:"Galv sheet $",meshFront:"Front m²/layer/m",meshBack:"Back m²/layer/m",meshBase:"Base m²/layer/m",meshBaffle:"Baffle m²/layer/m",meshLid:"Lid m²/m",meshWaste:"Mesh waste (0.1=10%)",clipsPerLayerPerM:"Clips $/layer/m",rockLoadPrice:"Rock $/load",rockLoadTonnes:"Load tonnes",rockDensity:"Rock t/m³",rockM3PerLayerPerM:"Rock m³/layer/m",rockBuffer:"Rock buffer (0.075)",geoMetresPerRoll:"Geotex m/roll",geoRollPrice:"Geotex $/roll",dayRate:"Labour $/day",limestoneM2PerDay:"Limestone m²/day",gabionTimeMultiplier:"Gabion time x",dayRounding:"Round days to",blockSell:"Block sell $",blockCost:"Block cost $",galvFactor:"Galv quote x lime",galfanFactor:"Galfan x galv",gst:"GST (0.1)",minMargin:"Min margin (0.2)"};
+function load(){try{var s=JSON.parse(localStorage.getItem(KEY));if(s)return Object.assign({},DEFAULT_RATES,s,{blocksPerMetre:Object.assign({},s.blocksPerMetre||DEFAULT_RATES.blocksPerMetre)});}catch(e){}return JSON.parse(JSON.stringify(DEFAULT_RATES));}
+var R=load(),H=1.5,T="galfan";
+var $=function(n){return n.toLocaleString("en-AU",{style:"currency",currency:"AUD",minimumFractionDigits:2,maximumFractionDigits:2})};
+var n2=function(n,d){return (+n).toLocaleString("en-AU",{maximumFractionDigits:d==null?2:d})};
+function buildRates(){var h="";Object.keys(LABELS).forEach(function(k){h+='<div><label>'+LABELS[k]+'</label><input data-k="'+k+'" type="number" step="any" value="'+R[k]+'"></div>'});
+ Object.keys(R.blocksPerMetre).forEach(function(k){h+='<div><label>Blocks/m @ '+k+' m</label><input data-b="'+k+'" type="number" step="any" value="'+R.blocksPerMetre[k]+'"></div>'});
+ document.getElementById("rates").innerHTML=h;}
+function buildH(){document.getElementById("hgt").innerHTML=Object.keys(R.blocksPerMetre).map(Number).sort(function(a,b){return a-b}).map(function(h){return '<button data-v="'+h+'" class="'+(h==H?"on":"")+'">'+h.toFixed(1)+'</button>'}).join("");}
+function row(a,b,c){return '<tr'+(c?' class="'+c+'"':'')+'><td>'+a+'</td><td>'+(b==null?"":b)+'</td></tr>'}
+function render(){var L=+document.getElementById("len").value||0,internal=document.getElementById("internal").checked,q;
+ try{q=calcQuote(L,H,T,R)}catch(e){document.getElementById("tval").textContent="–";document.getElementById("bd").innerHTML=row(e.message);return}
+ var names={galfan:"Gabion wall – Galfan mesh",galvanised:"Gabion wall – galvanised mesh",limestone:"Limestone block wall"};
+ document.getElementById("tval").textContent=$(q.quoteInc);
+ document.getElementById("tsub").textContent=names[T]+" · "+n2(L)+" m × "+H.toFixed(1)+" m ("+n2(q.faceArea)+" m²)";
+ var h=row("Wall",null,"h")+row("Layers (0.5 m cages)",T=="limestone"?"–":q.layers)+row("Face area",n2(q.faceArea)+" m²");
+ if(internal){
+  if(q.mesh){h+=row("Mesh",null,"h");if(T=="galfan"){h+=row("Galfan $/m of wall",$(q.mesh.perMetre))+row("1.0×0.5 panels (front/back/base + lid)",q.mesh.panels1x05)+row("0.5×0.5 baffles",q.mesh.baffles05x05)+row("Brace hooks",q.hooks)}else{h+=row("Mesh area incl. waste",n2(q.mesh.areaM2)+" m²")+row("2.4×4.5 sheets",q.mesh.sheets)}
+   h+=row("Mesh cost",$(q.mesh.cost))+row("Clips / spirals (estimate)",$(q.clips));
+   h+=row("Coffee rock",null,"h")+row("Volume incl. buffer",n2(q.rock.m3)+" m³")+row("Tonnes",n2(q.rock.tonnes)+" t")+row("Truck loads (12.5 t)",q.rock.loads)+row("Rock cost",$(q.rock.cost))+row("Geotextile ("+q.geotextile.rolls+" roll)",$(q.geotextile.cost))}
+  h+=row("Labour",null,"h")+row("Days",n2(q.labour.days))+row("Labour cost",$(q.labour.cost));
+  h+=row("Limestone basis",null,"h")+row("Blocks/m",n2(q.limestone.blocksPerMetre))+row("Blocks",q.limestone.blocks)+row("Limestone price @ $"+R.blockSell,$(q.limestone.quote))+row("Block cost @ $"+R.blockCost,$(q.limestone.blockCost));
+  h+=row("Result",null,"h")+row("Total cost ex GST",$(q.cost))+row("Quote ex GST",$(q.quoteEx))+row("GST",$(q.quoteInc-q.quoteEx))+row("Margin $",$(q.profit))+row("Margin %",'<span class="'+(q.belowMin?"warn":"ok")+'">'+(q.margin*100).toFixed(1)+"%"+(q.belowMin?" ⚠ below "+R.minMargin*100+"%":"")+"</span>");
+ } else {
+  if(q.rock)h+=row("Coffee rock",n2(q.rock.tonnes,1)+" t");
+  if(T=="limestone")h+=row("Limestone blocks",q.limestone.blocks);
+  h+=row("Supply &amp; install, inc GST",$(q.quoteInc));
+ }
+ document.getElementById("bd").innerHTML=h;}
+document.getElementById("hgt").onclick=function(e){if(e.target.dataset.v){H=+e.target.dataset.v;buildH();render()}};
+document.getElementById("type").onclick=function(e){if(!e.target.dataset.v)return;T=e.target.dataset.v;[].forEach.call(this.children,function(b){b.classList.toggle("on",b.dataset.v==T)});render()};
+document.getElementById("len").oninput=render;document.getElementById("internal").onchange=render;
+document.getElementById("rates").oninput=function(e){var t=e.target,v=parseFloat(t.value);if(isNaN(v))return;if(t.dataset.k)R[t.dataset.k]=v;else R.blocksPerMetre[t.dataset.b]=v;localStorage.setItem(KEY,JSON.stringify(R));render()};
+document.getElementById("reset").onclick=function(){localStorage.removeItem(KEY);R=load();buildRates();buildH();render()};
+buildRates();buildH();render();
+</script></body></html>
