@@ -27,7 +27,7 @@ var DEFAULT_RATES = {
   dayRate: 1800, limestoneM2PerDay: 18, gabionTimeMultiplier: 2, dayRounding: 0.5,
   blockSell: 90, blockCost: 30,
   blocksPerMetre: limestoneTable(),   // from original limestone calculator (was sheet: 3.5/5/7/14.5/19/25)
-  earthworksFee: 3000, earthworksMaxLength: 50, extraPct: 0.10, pmEnabled: true, pmOptions: [0.05, 0.10, 0.15, 0.20], earthworksCost: 0, engineeringFee: 2350, // engineering & site approval, included INSIDE the 20% PM line // earthworks cost assumed $0 (not in sheet)
+  earthworksFee: 3000, earthworksMaxLength: 50, extraPct: 0.10, pmEnabled: true, earthworksEnabled: true, pmOptions: [0.05, 0.10, 0.15, 0.20], earthworksCost: 0, engineeringFee: 2350, // engineering & site approval, included INSIDE the 20% PM line // earthworks cost assumed $0 (not in sheet)
   galvFactor: 1.05, galfanFactor: 1.15, gst: 0.10, minMargin: 0.20
 };
 function roundUp(x, d) { var f = Math.pow(10, d || 0); return Math.ceil(+(x * f).toFixed(9)) / f; }
@@ -61,7 +61,7 @@ function calcQuote(length, height, type, rates) {
   if (type === "galfan") { meshCost = galfanPerM * L; cost = meshCost + clips + rockCost + geoCost + gabLabour; quoteEx = limeQuote * r.galvFactor * r.galfanFactor; }
   else if (type === "galvanised") { meshCost = galvSheets * r.sheetPrice; cost = meshCost + clips + rockCost + geoCost + gabLabour; quoteEx = limeQuote * r.galvFactor; }
   else { meshCost = 0; cost = limeBlockCost + limeLabour; quoteEx = limeQuote; } // limestone cost = blocks@cost + labour (not in sheet)
-  var earthEx = L > 0 && L <= r.earthworksMaxLength ? r.earthworksFee : 0;
+  var earthTBC = L > r.earthworksMaxLength, earthEx = r.earthworksEnabled !== false && L > 0 && !earthTBC ? r.earthworksFee : 0;
   var extraEx = r.pmEnabled ? quoteEx * r.extraPct : 0, /* PM fee on wall price only, on top */ totalEx = quoteEx + earthEx + extraEx;
   var totalCost = cost + (earthEx ? r.earthworksCost : 0);
   var profit = totalEx - totalCost, margin = totalEx === 0 ? 0 : profit / totalEx;
@@ -77,7 +77,7 @@ function calcQuote(length, height, type, rates) {
     labour: type === "limestone" ? { days: limeDays, cost: limeLabour } : { days: gabDays, cost: gabLabour },
     limestone: { blocksPerMetre: bpm, blocks: blocks, quote: limeQuote, blockCost: limeBlockCost, days: limeDays, labour: limeLabour },
     wallCost: cost, cost: totalCost, quoteEx: quoteEx, quoteInc: quoteEx * g1,
-    earthworksEx: earthEx, earthworksInc: earthEx * g1, extraEx: extraEx, extraInc: extraEx * g1, pm: { enabled: !!r.pmEnabled, totalEx: extraEx, totalInc: extraEx * g1, engineeringEx: engEx, engineeringInc: engEx * g1, balanceEx: pmBalEx, balanceInc: pmBalEx * g1, engineeringExceedsPm: engShort, shortfallEx: engShort ? engEx - extraEx : 0 }, totalEx: totalEx, totalInc: totalEx * g1, gstAmount: totalEx * r.gst,
+    earthworksEnabled: r.earthworksEnabled !== false, earthworksTBC: earthTBC, earthworksEx: earthEx, earthworksInc: earthEx * g1, extraEx: extraEx, extraInc: extraEx * g1, pm: { enabled: !!r.pmEnabled, totalEx: extraEx, totalInc: extraEx * g1, engineeringEx: engEx, engineeringInc: engEx * g1, balanceEx: pmBalEx, balanceInc: pmBalEx * g1, engineeringExceedsPm: engShort, shortfallEx: engShort ? engEx - extraEx : 0 }, totalEx: totalEx, totalInc: totalEx * g1, gstAmount: totalEx * r.gst,
     wallMargin: quoteEx === 0 ? 0 : (quoteEx - cost) / quoteEx, profit: profit, margin: margin, belowMin: margin < r.minMargin
   };
 }
