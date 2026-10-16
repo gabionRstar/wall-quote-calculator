@@ -27,7 +27,7 @@ var DEFAULT_RATES = {
   dayRate: 1800, limestoneM2PerDay: 18, gabionTimeMultiplier: 2, dayRounding: 0.5,
   blockSell: 90, blockCost: 30,
   blocksPerMetre: limestoneTable(),   // from original limestone calculator (was sheet: 3.5/5/7/14.5/19/25)
-  earthworksFee: 3000, earthworksMaxLength: 50, extraPct: 0.20, earthworksCost: 0, // earthworks cost assumed $0 (not in sheet)
+  earthworksFee: 3000, earthworksMaxLength: 50, extraPct: 0.20, earthworksCost: 0, engineeringFee: 2350, // engineering & site approval, included INSIDE the 20% PM line // earthworks cost assumed $0 (not in sheet)
   galvFactor: 1.05, galfanFactor: 1.15, gst: 0.10, minMargin: 0.20
 };
 function roundUp(x, d) { var f = Math.pow(10, d || 0); return Math.ceil(+(x * f).toFixed(9)) / f; }
@@ -65,7 +65,7 @@ function calcQuote(length, height, type, rates) {
   var extraEx = (quoteEx + earthEx) * r.extraPct, totalEx = quoteEx + earthEx + extraEx;
   var totalCost = cost + (earthEx ? r.earthworksCost : 0);
   var profit = totalEx - totalCost, margin = totalEx === 0 ? 0 : profit / totalEx;
-  var g1 = 1 + r.gst;
+  var g1 = 1 + r.gst, engEx = r.engineeringFee, pmBalEx = Math.max(0, extraEx - engEx), engShort = extraEx < engEx;
   return {
     input: { length: L, height: visibleHeight, type: type }, visibleHeight: visibleHeight, pricedHeight: pricedHeight, heightAdjusted: pricedHeight !== visibleHeight, layers: layers, faceArea: face,
     mesh: type === "galfan" ? { kind: "Galfan panels", perMetre: galfanPerM, panels1x05: galfanPanels1x05, baffles05x05: galfanBaffles, hooks: hooks, cost: meshCost }
@@ -77,7 +77,7 @@ function calcQuote(length, height, type, rates) {
     labour: type === "limestone" ? { days: limeDays, cost: limeLabour } : { days: gabDays, cost: gabLabour },
     limestone: { blocksPerMetre: bpm, blocks: blocks, quote: limeQuote, blockCost: limeBlockCost, days: limeDays, labour: limeLabour },
     wallCost: cost, cost: totalCost, quoteEx: quoteEx, quoteInc: quoteEx * g1,
-    earthworksEx: earthEx, earthworksInc: earthEx * g1, extraEx: extraEx, extraInc: extraEx * g1, totalEx: totalEx, totalInc: totalEx * g1, gstAmount: totalEx * r.gst,
+    earthworksEx: earthEx, earthworksInc: earthEx * g1, extraEx: extraEx, extraInc: extraEx * g1, pm: { totalEx: extraEx, totalInc: extraEx * g1, engineeringEx: engEx, engineeringInc: engEx * g1, balanceEx: pmBalEx, balanceInc: pmBalEx * g1, engineeringExceedsPm: engShort, shortfallEx: engShort ? engEx - extraEx : 0 }, totalEx: totalEx, totalInc: totalEx * g1, gstAmount: totalEx * r.gst,
     wallMargin: quoteEx === 0 ? 0 : (quoteEx - cost) / quoteEx, profit: profit, margin: margin, belowMin: margin < r.minMargin
   };
 }
