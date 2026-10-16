@@ -1,5 +1,18 @@
 /* Gabion Fabrication – Wall Quote Calculator. Formulas copied 1:1 from the Google Sheet
    "Gabion Wall Quote Calculator (2026)" (Calculator / Rates / Height table tabs). All $ ex GST unless "Inc". */
+/* Limestone blocks/m: exact port of calc() from gabionRstar/limestone-calculator (limestone.js, Structerre H23R taper + SMALL table). */
+var LIME_C = { BLOCK_L: 1000, BLOCK_W: 350, BLOCK_H: 350, MORTAR: 20, MIN_BASE: 650, EMBED_LOW: 200, EMBED_HIGH: 300, EMBED_SWITCH: 1000 };
+var LIME_SMALL = { 400: [1, 1], 500: [1, 1], 600: [2, 2, 1], 700: [2, 2, 1], 800: [2, 2, 1] };
+function limestoneBpm(heightM) {
+  var C = LIME_C, H = Math.round(heightM * 1000), sm = LIME_SMALL[Math.round(H / 100) * 100];
+  if (H < 900 && sm) return sm.reduce(function (a, b) { return a + b; }, 0);
+  var embed = H <= C.EMBED_SWITCH ? C.EMBED_LOW : C.EMBED_HIGH;
+  var base = H / 2 + 200; if (H <= C.EMBED_SWITCH) base = Math.max(base, C.MIN_BASE);
+  var total = H + embed, ch = C.BLOCK_H + C.MORTAR, pw = C.BLOCK_W + C.MORTAR, courses = Math.ceil(total / ch), sum = 0;
+  for (var i = 0; i < courses; i++) { var f = courses > 1 ? i / (courses - 1) : 0; sum += Math.max(1, Math.ceil((base - (base - C.BLOCK_W) * f + C.MORTAR) / pw)); }
+  return Math.ceil(sum / ((C.BLOCK_L + C.MORTAR) / 1000) - 1e-9);
+}
+function limestoneTable() { var t = {}; [0.5, 1, 1.5, 2, 2.5, 3].forEach(function (h) { t[String(h)] = limestoneBpm(h); }); return t; }
 var DEFAULT_RATES = {
   layerHeight: 0.5,          // Rates!B4  one cage layer per this much height (cages 0.5 m wide)
   // Galfan panels (Jamie O'Brien, Global Synthetics, 15 Jul 2026, ex GST)
@@ -13,7 +26,7 @@ var DEFAULT_RATES = {
   geoMetresPerRoll: 50, geoRollPrice: 0,
   dayRate: 1800, limestoneM2PerDay: 18, gabionTimeMultiplier: 2, dayRounding: 0.5,
   blockSell: 90, blockCost: 30,
-  blocksPerMetre: { "0.5": 3.5, "1": 5, "1.5": 7, "2": 14.5, "2.5": 19, "3": 25 },
+  blocksPerMetre: limestoneTable(),   // from original limestone calculator (was sheet: 3.5/5/7/14.5/19/25)
   galvFactor: 1.05, galfanFactor: 1.15, gst: 0.10, minMargin: 0.20
 };
 function roundUp(x, d) { var f = Math.pow(10, d || 0); return Math.ceil(+(x * f).toFixed(9)) / f; }
@@ -61,4 +74,4 @@ function calcQuote(length, height, type, rates) {
     cost: cost, quoteEx: quoteEx, quoteInc: quoteEx * (1 + r.gst), profit: profit, margin: margin, belowMin: margin < r.minMargin
   };
 }
-if (typeof module !== "undefined" && module.exports) module.exports = { calcQuote: calcQuote, DEFAULT_RATES: DEFAULT_RATES };
+if (typeof module !== "undefined" && module.exports) module.exports = { calcQuote: calcQuote, limestoneBpm: limestoneBpm, DEFAULT_RATES: DEFAULT_RATES };
