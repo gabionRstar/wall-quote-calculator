@@ -25,7 +25,7 @@ var DEFAULT_RATES = {
   rockLoadPrice: 1100, rockLoadTonnes: 12.5, rockDensity: 1.8, rockM3PerLayerPerM: 0.25, rockBuffer: 0.075,
   geoMetresPerRoll: 50, geoRollPrice: 0,
   dayRate: 1800, limestoneM2PerDay: 18, gabionTimeMultiplier: 2, dayRounding: 0.5,
-  blockSell: 90, blockCost: 30,
+  blockSell: 90, // Bret's installed rate: all-in (materials + labour), also the contractor cost
   blocksPerMetre: limestoneTable(),   // from original limestone calculator (was sheet: 3.5/5/7/14.5/19/25)
   earthworksFee: 3000, earthworksMaxLength: 50, extraPct: 0.10, pmEnabled: true, earthworksEnabled: true, pmOptions: [0.05, 0.10, 0.15, 0.20], earthworksCost: 0, engineeringFee: 2350, // engineering & site approval, included INSIDE the 20% PM line // earthworks cost assumed $0 (not in sheet)
   galvFactor: 1.05, galfanFactor: 1.15, gst: 0.10, minMargin: 0.20
@@ -55,12 +55,11 @@ function calcQuote(length, height, type, rates) {
   var gabDays = roundUp(face / (r.limestoneM2PerDay / r.gabionTimeMultiplier) / r.dayRounding) * r.dayRounding;
   var gabLabour = gabDays * r.dayRate;
   var bpm = lookupBlocks(r, H), blocks = roundUp(bpm * L);
-  var limeQuote = blocks * r.blockSell, limeBlockCost = blocks * r.blockCost;
-  var limeDays = roundUp(face / r.limestoneM2PerDay / r.dayRounding) * r.dayRounding, limeLabour = limeDays * r.dayRate;
+  var limeQuote = blocks * r.blockSell; // limestone wall price = blocks x $90, nothing on top
   var meshCost, cost, quoteEx;
   if (type === "galfan") { meshCost = galfanPerM * L; cost = meshCost + clips + rockCost + geoCost + gabLabour; quoteEx = limeQuote * r.galvFactor * r.galfanFactor; }
   else if (type === "galvanised") { meshCost = galvSheets * r.sheetPrice; cost = meshCost + clips + rockCost + geoCost + gabLabour; quoteEx = limeQuote * r.galvFactor; }
-  else { meshCost = 0; cost = limeBlockCost + limeLabour; quoteEx = limeQuote; } // limestone cost = blocks@cost + labour (not in sheet)
+  else { meshCost = 0; cost = limeQuote; quoteEx = limeQuote; } // $90/block is contractor cost all-in: no wall margin, profit = PM fee
   var earthTBC = L > r.earthworksMaxLength, earthEx = r.earthworksEnabled !== false && L > 0 && !earthTBC ? r.earthworksFee : 0;
   var extraEx = r.pmEnabled ? quoteEx * r.extraPct : 0, /* PM fee on wall price only, on top */ totalEx = quoteEx + earthEx + extraEx;
   var totalCost = cost + (earthEx ? r.earthworksCost : 0);
@@ -74,8 +73,8 @@ function calcQuote(length, height, type, rates) {
     clips: type === "limestone" ? 0 : clips,
     rock: type === "limestone" ? null : { m3: rockM3, tonnes: rockT, loads: rockLoads, cost: rockCost },
     geotextile: type === "limestone" ? null : { rolls: geoRolls, cost: geoCost },
-    labour: type === "limestone" ? { days: limeDays, cost: limeLabour } : { days: gabDays, cost: gabLabour },
-    limestone: { blocksPerMetre: bpm, blocks: blocks, quote: limeQuote, blockCost: limeBlockCost, days: limeDays, labour: limeLabour },
+    labour: type === "limestone" ? null : { days: gabDays, cost: gabLabour },
+    limestone: { blocksPerMetre: bpm, blocks: blocks, quote: limeQuote },
     wallCost: cost, cost: totalCost, quoteEx: quoteEx, quoteInc: quoteEx * g1,
     earthworksEnabled: r.earthworksEnabled !== false, earthworksTBC: earthTBC, earthworksEx: earthEx, earthworksInc: earthEx * g1, extraEx: extraEx, extraInc: extraEx * g1, pm: { enabled: !!r.pmEnabled, totalEx: extraEx, totalInc: extraEx * g1, engineeringEx: engEx, engineeringInc: engEx * g1, balanceEx: pmBalEx, balanceInc: pmBalEx * g1, engineeringExceedsPm: engShort, shortfallEx: engShort ? engEx - extraEx : 0 }, totalEx: totalEx, totalInc: totalEx * g1, gstAmount: totalEx * r.gst,
     wallMargin: quoteEx === 0 ? 0 : (quoteEx - cost) / quoteEx, profit: profit, margin: margin, belowMin: margin < r.minMargin
