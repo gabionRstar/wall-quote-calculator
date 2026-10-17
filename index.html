@@ -47,9 +47,15 @@ tr.h td{color:var(--y);font-weight:700;text-transform:uppercase;font-size:11px;l
 <div class="rates" id="rates"></div><button class="btn" id="reset">Reset to default rates</button></details></div>
 <p class="note">Gabion materials from the 2026 sheet. Clips allowance is an estimate; geotextile, freight and overheads not yet priced.</p>
 </div>
-<script src="calc.js"></script><script>
+<script src="calc.js?v=7d3e012"></script><script>
+if(typeof CALC_VERSION==="undefined"||CALC_VERSION<5){if(!/[?&]r=/.test(location.search))location.replace(location.pathname+"?r="+Date.now());}
 var KEY="wqc-rates-v4",LABELS={dayRate:"Labour $/day",limestoneM2PerDay:"Limestone build m²/day",gabionM2PerDay:"Gabion build m²/day",dayRounding:"Round days up to",blockSell:"Limestone sell $/block",blockMaterial:"Limestone material $/block",contractorShare:"Josh share of contractor margin (0.1)",extraPct:"Management fee (0.1)",siteFee:"Site &amp; project fee $",earthworksFee:"Earthworks $",earthworksMaxLength:"Earthworks if length ≤ m",panel1x05:"Galfan 1x0.5 $",panel05x05:"Galfan 0.5x0.5 $",braceHook:"Brace hook $",hooksPerLayerPerM:"Hooks /layer/m",sheetPrice:"Galv sheet $",sheetLength:"Galv sheet L m",sheetWidth:"Galv sheet W m",meshWaste:"Mesh waste (0.1)",clipsPerLayerPerM:"Clips $/layer/m",rockLoadPrice:"Rock $/load",rockLoadTonnes:"Load tonnes",rockDensity:"Rock t/m³",rockM3PerLayerPerM:"Rock m³/layer/m",rockBuffer:"Rock buffer",geoRollPrice:"Geotex $/roll",geoMetresPerRoll:"Geotex m/roll",gst:"GST (0.1)"};
-function load(){try{var s=JSON.parse(localStorage.getItem(KEY));if(s)return Object.assign({},DEFAULT_RATES,s,{blocksPerMetre:Object.assign({},s.blocksPerMetre||DEFAULT_RATES.blocksPerMetre)});}catch(e){}return JSON.parse(JSON.stringify(DEFAULT_RATES));}
+function load(){var d=JSON.parse(JSON.stringify(DEFAULT_RATES)),s=null;try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+ if(!s||typeof s!=="object")return d;
+ Object.keys(LABELS).forEach(function(k){var v=parseFloat(s[k]);if(isFinite(v))d[k]=v});
+ ["pmEnabled","earthworksEnabled","siteFeeEnabled"].forEach(function(k){if(typeof s[k]==="boolean")d[k]=s[k]});
+ if(isFinite(parseFloat(s.extraPct)))d.extraPct=parseFloat(s.extraPct);
+ return d;}
 var R=load(),H=1.5,T="galfan";
 var $=function(n){return n.toLocaleString("en-AU",{style:"currency",currency:"AUD",minimumFractionDigits:2,maximumFractionDigits:2})};
 var n2=function(n,d){return (+n).toLocaleString("en-AU",{maximumFractionDigits:d==null?2:d})};
@@ -58,7 +64,8 @@ function buildRates(){var h="";Object.keys(LABELS).forEach(function(k){h+='<div>
 function buildH(){var o="";for(var i=4;i<=30;i++){var v=(i/10).toFixed(1);o+='<option value="'+v+'"'+(+v==H?" selected":"")+'>'+v+' m</option>'}document.getElementById("hgt").innerHTML=o;}
 function row(a,b,c){return '<tr'+(c?' class="'+c+'"':'')+'><td>'+a+'</td><td>'+(b==null?"":b)+'</td></tr>'}
 function buildPM(){document.getElementById("siteon").checked=R.siteFeeEnabled!==false;document.getElementById("earthon").checked=R.earthworksEnabled!==false;document.getElementById("pmon").checked=R.pmEnabled!==false;document.getElementById("pmseg").classList.toggle("off",R.pmEnabled===false);document.getElementById("pmseg").innerHTML=(R.pmOptions||DEFAULT_RATES.pmOptions).map(function(p){return '<button data-v="'+p+'" class="'+(Math.abs(p-R.extraPct)<1e-9?"on":"")+'">'+Math.round(p*100)+'%</button>'}).join("")}
-function render(){var L=+document.getElementById("len").value||0,internal=document.getElementById("internal").checked,q;
+function render(){try{render0()}catch(e){document.getElementById("bd").innerHTML=row("Error: "+e.message+" — please reload the page");if(window.console)console.error(e)}}
+function render0(){var L=+document.getElementById("len").value||0,internal=document.getElementById("internal").checked,q;
  try{q=calcQuote(L,H,T,R)}catch(e){document.getElementById("tval").textContent="–";document.getElementById("bd").innerHTML=row(e.message);return}
  var names={galfan:"Gabion wall – Galfan mesh",galvanised:"Gabion wall – galvanised mesh",limestone:"Limestone block wall"};
  document.getElementById("tval").textContent=$(q.totalInc);

@@ -1,3 +1,4 @@
+var CALC_VERSION = 5;
 /* Gabion Fabrication – Wall Quote Calculator. All $ ex GST unless "Inc".
    Model (Josh, Oct 2026): limestone = blocks x $90. Contractor cost = materials + labour (day rate, rounded to 0.5 day).
    Josh income = mgmt fee (fee% x wall price, ADDED ON TOP as its own customer line) + 10% of contractor margin + flat site & project fee.
