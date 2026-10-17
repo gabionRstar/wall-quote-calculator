@@ -39,7 +39,7 @@ tr.h td{color:var(--y);font-weight:700;text-transform:uppercase;font-size:11px;l
 <label class="toggle"><input type="checkbox" id="internal" checked> Show internal cost &amp; margin (Josh's view)</label>
 </div><div>
 <div class="total"><div class="k" id="tlabel">Quote inc GST</div><div class="v" id="tval">$0</div><div class="s" id="tsub"></div></div>
-<div class="card"><label class="toggle" style="margin:0 0 10px"><input type="checkbox" id="earthon"> Charge earthworks to customer</label><label class="toggle" style="margin:0 0 10px"><input type="checkbox" id="siteon"> Add site &amp; project fee ($2,500 ex GST)</label><label class="toggle" style="margin:0 0 8px"><input type="checkbox" id="pmon"> Management fee (Josh, inside wall price)</label><div class="seg pm" id="pmseg"></div></div>
+<div class="card"><label class="toggle" style="margin:0 0 10px"><input type="checkbox" id="earthon"> Charge earthworks to customer</label><label class="toggle" style="margin:0 0 10px"><input type="checkbox" id="siteon"> Add site &amp; project fee ($2,500 ex GST)</label><label class="toggle" style="margin:0 0 8px"><input type="checkbox" id="pmon"> Management fee (added to customer price)</label><div class="seg pm" id="pmseg"></div></div>
 <div class="card"><h2>Breakdown</h2><table id="bd"></table></div>
 </div></div>
 <div class="card"><details><summary>Rates</summary>
@@ -71,12 +71,12 @@ function render(){var L=+document.getElementById("len").value||0,internal=docume
   else{h+=row("Contractor cost",null,"h");if(T=="galfan")h+=row("Galfan panels ("+q.mesh.panels1x05+" + "+q.mesh.baffles05x05+" baffles, "+q.hooks+" hooks)",$(q.mesh.cost));else h+=row("Galv sheets ("+q.mesh.sheets+" × 2.4×4.5)",$(q.mesh.cost));
    h+=row("Clips / spirals (estimate)",$(q.clips))+row("Coffee rock ("+n2(q.rock.tonnes,1)+" t, "+q.rock.loads+" loads)",$(q.rock.cost))+row("Geotextile",$(q.geotextile.cost))+row("Materials",$(q.materialsCost))}
   h+=row("Labour ("+n2(q.labour.days)+" days @ "+n2(q.labour.m2PerDay)+" m²/day × "+$(R.dayRate)+")",$(q.labour.cost))+row("<b>Contractor cost</b>",$(q.contractorCost));
-  h+=row("Price ex GST",null,"h")+row("Wall"+(T=="limestone"?" ("+q.limestone.blocks+" × $"+R.blockSell+")":" (priced to match limestone "+pc(q.josh.targetPct)+")"),$(q.quoteEx))+row("Contractor margin",$(q.contractorMargin))+(T=="limestone"?"":row("Limestone same size",$(q.limestone.quote)))+(q.siteFeeEnabled?row(sl,$(q.siteFeeEx)):"")+(q.earthworksTBC?row("Earthworks over "+R.earthworksMaxLength+" m","TBC"):row("Earthworks"+(q.earthworksEnabled?"":" (not charged)"),$(q.earthworksEx)))+row("Total ex GST",$(q.totalEx))+row("GST",$(q.gstAmount))+row("<b>Total inc GST</b>",$(q.totalInc));
+  h+=row("Price ex GST",null,"h")+row("Wall"+(T=="limestone"?" ("+q.limestone.blocks+" × $"+R.blockSell+")":" (priced to match limestone "+pc(q.josh.targetPct)+" at 10%)"),$(q.quoteEx))+row("Contractor margin",$(q.contractorMargin))+(T=="limestone"?"":row("Limestone same size",$(q.limestone.quote)))+(q.pm.enabled?row(fl,$(q.pm.ex)):"")+(q.siteFeeEnabled?row(sl,$(q.siteFeeEx)):"")+(q.earthworksTBC?row("Earthworks over "+R.earthworksMaxLength+" m","TBC"):row("Earthworks"+(q.earthworksEnabled?"":" (not charged)"),$(q.earthworksEx)))+row("Total ex GST",$(q.totalEx))+row("GST",$(q.gstAmount))+row("<b>Total inc GST</b>",$(q.totalInc));
   h+=row("Josh's income ex GST",null,"h")+(q.pm.enabled?row(fl,$(q.josh.fee)):row("Management fee","off"))+row(Math.round(R.contractorShare*100)+"% of contractor margin (internal)",$(q.josh.share))+row("Wall income",$(q.josh.wallOnly)+" · "+pc(q.josh.wallOnlyPct))+(q.siteFeeEnabled?row(sl,$(q.josh.siteFee)):"")+row("<b>Josh total</b>",'<span class="ok">'+$(q.josh.total)+" · "+pc(q.josh.pct)+" of ex-GST total</span>");
  } else {
   if(q.rock)h+=row("Coffee rock",n2(q.rock.tonnes,1)+" t");
   if(T=="limestone")h+=row("Limestone blocks",q.limestone.blocks);
-  h+=row("Quote",null,"h")+row("Wall, inc GST",$(q.quoteInc))+(q.siteFeeEx?row(sl+", inc GST",$(q.siteFeeInc)):"")+(q.earthworksEx?row("Earthworks, inc GST",$(q.earthworksInc)):"")+(q.earthworksTBC?row("Earthworks","TBC"):"")+row("<b>Total inc GST</b>","<b>"+$(q.totalInc)+"</b>");
+  h+=row("Quote",null,"h")+row("Wall, inc GST",$(q.quoteInc))+(q.pm.enabled?row(fl+", inc GST",$(q.pm.inc)):"")+(q.siteFeeEx?row(sl+", inc GST",$(q.siteFeeInc)):"")+(q.earthworksEx?row("Earthworks, inc GST",$(q.earthworksInc)):"")+(q.earthworksTBC?row("Earthworks","TBC"):"")+row("<b>Total inc GST</b>","<b>"+$(q.totalInc)+"</b>");
  }
  document.getElementById("bd").innerHTML=h;}
 document.getElementById("hgt").onchange=function(){H=+this.value;render()};

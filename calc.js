@@ -1,6 +1,7 @@
 /* Gabion Fabrication – Wall Quote Calculator. All $ ex GST unless "Inc".
    Model (Josh, Oct 2026): limestone = blocks x $90. Contractor cost = materials + labour (day rate, rounded to 0.5 day).
-   Josh income = mgmt fee % of wall price + 10% of contractor margin (+ flat site & project fee on top).
+   Josh income = mgmt fee (fee% x wall price, ADDED ON TOP as its own customer line) + 10% of contractor margin + flat site & project fee.
+   Gabion wall price is solved so (10% of wall + 10% of contractor margin)/wall equals limestone's at the same height (fixed 10% basis, independent of the fee setting).
    Gabion wall price is solved so Josh's wall % equals limestone's at the same height & length. Gabion materials from the 2026 sheet. */
 /* Limestone blocks/m: exact port of calc() from gabionRstar/limestone-calculator (limestone.js, Structerre H23R taper + SMALL table). */
 var LIME_C = { BLOCK_L: 1000, BLOCK_W: 350, BLOCK_H: 350, MORTAR: 20, MIN_BASE: 650, EMBED_LOW: 200, EMBED_HIGH: 300, EMBED_SWITCH: 1000 };
@@ -60,19 +61,19 @@ function calcQuote(length, height, type, rates) {
   // Limestone at the exact entered height (original calc() blocks x $90). Always computed: it sets gabion's target %.
   var bpm = limestoneBpm(visibleHeight), blocks = roundUp(bpm * L), limeQuote = blocks * r.blockSell;
   var limeFace = L * visibleHeight, limeDays = days(limeFace, r.limestoneM2PerDay), limeLabour = limeDays * r.dayRate, limeMat = blocks * r.blockMaterial;
-  var limeCost = limeMat + limeLabour, limeIncome = f * limeQuote + k * (limeQuote - limeCost), targetPct = limeQuote ? limeIncome / limeQuote : 0;
+  var mb = 0.10, limeCost = limeMat + limeLabour, limeIncome = mb * limeQuote + k * (limeQuote - limeCost), targetPct = limeQuote ? limeIncome / limeQuote : 0;
   var meshCost, matCost, cost, quoteEx;
   if (isLime) { meshCost = 0; matCost = limeMat; cost = limeCost; quoteEx = limeQuote; }
   else {
     meshCost = type === "galfan" ? galfanPerM * L : galvSheets * r.sheetPrice;
     matCost = meshCost + clips + rockCost + geoCost; cost = matCost + gabLabour;
-    // Josh's % = (f*P + k*(P - C)) / P = target  =>  P = k*C / (f + k - target)
-    var den = f + k - targetPct; quoteEx = den > 1e-9 ? k * cost / den : NaN;
+    // (mb*P + k*(P - C)) / P = target  =>  P = k*C / (mb + k - target)
+    var den = mb + k - targetPct; quoteEx = den > 1e-9 ? k * cost / den : NaN;
   }
   var earthTBC = L > r.earthworksMaxLength, earthEx = r.earthworksEnabled !== false && L > 0 && !earthTBC ? r.earthworksFee : 0;
   var siteEx = r.siteFeeEnabled !== false && L > 0 ? r.siteFee : 0;
-  var totalEx = quoteEx + siteEx + earthEx, g1 = 1 + r.gst;
-  var contractorMargin = quoteEx - cost, joshFee = f * quoteEx, joshShare = k * contractorMargin, joshTotal = joshFee + joshShare + siteEx;
+  var pmEx = f * quoteEx, totalEx = quoteEx + pmEx + siteEx + earthEx, g1 = 1 + r.gst;
+  var contractorMargin = quoteEx - cost, joshFee = pmEx, joshShare = k * contractorMargin, joshTotal = joshFee + joshShare + siteEx;
   return {
     input: { length: L, height: visibleHeight, type: type }, visibleHeight: visibleHeight, pricedHeight: isLime ? visibleHeight : pricedHeight, heightAdjusted: !isLime && pricedHeight !== visibleHeight, layers: layers, faceArea: face,
     mesh: type === "galfan" ? { kind: "Galfan panels", perMetre: galfanPerM, panels1x05: galfanPanels1x05, baffles05x05: galfanBaffles, hooks: hooks, cost: meshCost }
@@ -86,8 +87,8 @@ function calcQuote(length, height, type, rates) {
     materialsCost: matCost, contractorCost: cost, contractorMargin: contractorMargin, quoteEx: quoteEx, quoteInc: quoteEx * g1,
     siteFeeEnabled: r.siteFeeEnabled !== false, siteFeeEx: siteEx, siteFeeInc: siteEx * g1,
     earthworksEnabled: r.earthworksEnabled !== false, earthworksTBC: earthTBC, earthworksEx: earthEx, earthworksInc: earthEx * g1,
-    pm: { enabled: !!r.pmEnabled, pct: f }, totalEx: totalEx, totalInc: totalEx * g1, gstAmount: totalEx * r.gst,
-    josh: { fee: joshFee, share: joshShare, siteFee: siteEx, total: joshTotal, pct: totalEx ? joshTotal / totalEx : 0, wallOnly: joshFee + joshShare, wallOnlyPct: quoteEx ? (joshFee + joshShare) / quoteEx : 0, targetPct: targetPct }
+    pm: { enabled: !!r.pmEnabled, pct: f, ex: pmEx, inc: pmEx * g1 }, totalEx: totalEx, totalInc: totalEx * g1, gstAmount: totalEx * r.gst,
+    josh: { fee: joshFee, share: joshShare, siteFee: siteEx, total: joshTotal, pct: totalEx ? joshTotal / totalEx : 0, wallOnly: joshFee + joshShare, wallOnlyPct: quoteEx ? (joshFee + joshShare) / quoteEx : 0, targetPct: targetPct, matchPct: quoteEx ? (mb * quoteEx + joshShare) / quoteEx : 0 }
   };
 }
 if (typeof module !== "undefined" && module.exports) module.exports = { calcQuote: calcQuote, limestoneBpm: limestoneBpm, DEFAULT_RATES: DEFAULT_RATES };
