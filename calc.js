@@ -54,7 +54,9 @@ function calcQuote(length, height, type, rates) {
   var geoRolls = roundUp(L / r.geoMetresPerRoll), geoCost = geoRolls * r.geoRollPrice;
   var gabDays = roundUp(face / (r.limestoneM2PerDay / r.gabionTimeMultiplier) / r.dayRounding) * r.dayRounding;
   var gabLabour = gabDays * r.dayRate;
-  var bpm = lookupBlocks(r, H), blocks = roundUp(bpm * L);
+  var isLime = type !== "galfan" && type !== "galvanised";
+  // Limestone: exact entered height, original calc() block count (no 0.5 m round-up). Gabion: priced from limestone at the rounded-up cage height.
+  var bpm = isLime ? limestoneBpm(visibleHeight) : lookupBlocks(r, H), blocks = roundUp(bpm * L);
   var limeQuote = blocks * r.blockSell; // limestone wall price = blocks x $90, nothing on top
   var meshCost, cost, quoteEx;
   if (type === "galfan") { meshCost = galfanPerM * L; cost = meshCost + clips + rockCost + geoCost + gabLabour; quoteEx = limeQuote * r.galvFactor * r.galfanFactor; }
@@ -66,7 +68,7 @@ function calcQuote(length, height, type, rates) {
   var profit = totalEx - totalCost, margin = totalEx === 0 ? 0 : profit / totalEx;
   var g1 = 1 + r.gst, engEx = r.engineeringFee, pmBalEx = Math.max(0, extraEx - engEx), engShort = r.pmEnabled && extraEx < engEx; if (!r.pmEnabled) { engEx = 0; pmBalEx = 0; }
   return {
-    input: { length: L, height: visibleHeight, type: type }, visibleHeight: visibleHeight, pricedHeight: pricedHeight, heightAdjusted: pricedHeight !== visibleHeight, layers: layers, faceArea: face,
+    input: { length: L, height: visibleHeight, type: type }, visibleHeight: visibleHeight, pricedHeight: isLime ? visibleHeight : pricedHeight, heightAdjusted: !isLime && pricedHeight !== visibleHeight, layers: layers, faceArea: face,
     mesh: type === "galfan" ? { kind: "Galfan panels", perMetre: galfanPerM, panels1x05: galfanPanels1x05, baffles05x05: galfanBaffles, hooks: hooks, cost: meshCost }
         : type === "galvanised" ? { kind: "Galvanised sheets 2.4x4.5", areaM2: galvArea, sheets: galvSheets, cost: meshCost } : null,
     hooks: type === "galfan" ? hooks : 0,
