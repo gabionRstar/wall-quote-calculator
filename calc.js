@@ -1,5 +1,7 @@
-/* Gabion Fabrication – Wall Quote Calculator. Formulas copied 1:1 from the Google Sheet
-   "Gabion Wall Quote Calculator (2026)" (Calculator / Rates / Height table tabs). All $ ex GST unless "Inc". */
+/* Gabion Fabrication – Wall Quote Calculator. All $ ex GST unless "Inc".
+   Model (Josh, Oct 2026): limestone = blocks x $90. Contractor cost = materials + labour (day rate, rounded to 0.5 day).
+   Josh income = mgmt fee % of wall price + 10% of contractor margin (+ flat site & project fee on top).
+   Gabion wall price is solved so Josh's wall % equals limestone's at the same height & length. Gabion materials from the 2026 sheet. */
 /* Limestone blocks/m: exact port of calc() from gabionRstar/limestone-calculator (limestone.js, Structerre H23R taper + SMALL table). */
 var LIME_C = { BLOCK_L: 1000, BLOCK_W: 350, BLOCK_H: 350, MORTAR: 20, MIN_BASE: 650, EMBED_LOW: 200, EMBED_HIGH: 300, EMBED_SWITCH: 1000 };
 var LIME_SMALL = { 400: [1, 1], 500: [1, 1], 600: [2, 2, 1], 700: [2, 2, 1], 800: [2, 2, 1] };
@@ -24,11 +26,10 @@ var DEFAULT_RATES = {
   clipsPerLayerPerM: 8,      // ESTIMATE
   rockLoadPrice: 1100, rockLoadTonnes: 12.5, rockDensity: 1.8, rockM3PerLayerPerM: 0.25, rockBuffer: 0.075,
   geoMetresPerRoll: 50, geoRollPrice: 0,
-  dayRate: 1800, limestoneM2PerDay: 18, gabionTimeMultiplier: 2, dayRounding: 0.5,
-  blockSell: 90, // Bret's installed rate: all-in (materials + labour), also the contractor cost
+  dayRate: 2500, limestoneM2PerDay: 18, gabionM2PerDay: 9, dayRounding: 0.5, blockMaterial: 32, contractorShare: 0.10, siteFee: 2500, siteFeeEnabled: true,
+  blockSell: 90, // limestone sell price per block, all-in (materials + labour)
   blocksPerMetre: limestoneTable(),   // from original limestone calculator (was sheet: 3.5/5/7/14.5/19/25)
-  earthworksFee: 3000, earthworksMaxLength: 50, extraPct: 0.10, pmEnabled: true, earthworksEnabled: true, pmOptions: [0.05, 0.10, 0.15, 0.20], earthworksCost: 0, engineeringFee: 2350, // engineering & site approval, included INSIDE the 20% PM line // earthworks cost assumed $0 (not in sheet)
-  galvFactor: 1.05, galfanFactor: 1.15, gst: 0.10, minMargin: 0.20
+  earthworksFee: 3000, earthworksMaxLength: 50, extraPct: 0.10, pmEnabled: true, earthworksEnabled: true, pmOptions: [0.05, 0.10, 0.15, 0.16, 0.20], gst: 0.10
 };
 function roundUp(x, d) { var f = Math.pow(10, d || 0); return Math.ceil(+(x * f).toFixed(9)) / f; }
 function lookupBlocks(r, h) { var k = String(+h); var v = r.blocksPerMetre[k]; if (v === undefined) throw new Error("No blocks-per-metre entry for " + h + " m"); return v; }
@@ -52,21 +53,26 @@ function calcQuote(length, height, type, rates) {
   var rockM3 = r.rockM3PerLayerPerM * layers * L * (1 + r.rockBuffer), rockT = rockM3 * r.rockDensity;
   var rockLoads = roundUp(rockT / r.rockLoadTonnes), rockCost = rockT * (r.rockLoadPrice / r.rockLoadTonnes);
   var geoRolls = roundUp(L / r.geoMetresPerRoll), geoCost = geoRolls * r.geoRollPrice;
-  var gabDays = roundUp(face / (r.limestoneM2PerDay / r.gabionTimeMultiplier) / r.dayRounding) * r.dayRounding;
-  var gabLabour = gabDays * r.dayRate;
+  var days = function (area, perDay) { return roundUp(area / perDay / r.dayRounding) * r.dayRounding; };
+  var gabDays = days(face, r.gabionM2PerDay), gabLabour = gabDays * r.dayRate;
   var isLime = type !== "galfan" && type !== "galvanised";
-  // Limestone: exact entered height, original calc() block count (no 0.5 m round-up). Gabion: priced from limestone at the rounded-up cage height.
-  var bpm = isLime ? limestoneBpm(visibleHeight) : lookupBlocks(r, H), blocks = roundUp(bpm * L);
-  var limeQuote = blocks * r.blockSell; // limestone wall price = blocks x $90, nothing on top
-  var meshCost, cost, quoteEx;
-  if (type === "galfan") { meshCost = galfanPerM * L; cost = meshCost + clips + rockCost + geoCost + gabLabour; quoteEx = limeQuote * r.galvFactor * r.galfanFactor; }
-  else if (type === "galvanised") { meshCost = galvSheets * r.sheetPrice; cost = meshCost + clips + rockCost + geoCost + gabLabour; quoteEx = limeQuote * r.galvFactor; }
-  else { meshCost = 0; cost = limeQuote; quoteEx = limeQuote; } // $90/block is contractor cost all-in: no wall margin, profit = PM fee
+  var f = r.pmEnabled ? r.extraPct : 0, k = r.contractorShare;
+  // Limestone at the exact entered height (original calc() blocks x $90). Always computed: it sets gabion's target %.
+  var bpm = limestoneBpm(visibleHeight), blocks = roundUp(bpm * L), limeQuote = blocks * r.blockSell;
+  var limeFace = L * visibleHeight, limeDays = days(limeFace, r.limestoneM2PerDay), limeLabour = limeDays * r.dayRate, limeMat = blocks * r.blockMaterial;
+  var limeCost = limeMat + limeLabour, limeIncome = f * limeQuote + k * (limeQuote - limeCost), targetPct = limeQuote ? limeIncome / limeQuote : 0;
+  var meshCost, matCost, cost, quoteEx;
+  if (isLime) { meshCost = 0; matCost = limeMat; cost = limeCost; quoteEx = limeQuote; }
+  else {
+    meshCost = type === "galfan" ? galfanPerM * L : galvSheets * r.sheetPrice;
+    matCost = meshCost + clips + rockCost + geoCost; cost = matCost + gabLabour;
+    // Josh's % = (f*P + k*(P - C)) / P = target  =>  P = k*C / (f + k - target)
+    var den = f + k - targetPct; quoteEx = den > 1e-9 ? k * cost / den : NaN;
+  }
   var earthTBC = L > r.earthworksMaxLength, earthEx = r.earthworksEnabled !== false && L > 0 && !earthTBC ? r.earthworksFee : 0;
-  var extraEx = r.pmEnabled ? quoteEx * r.extraPct : 0, /* PM fee on wall price only, on top */ totalEx = quoteEx + earthEx + extraEx;
-  var totalCost = cost + (earthEx ? r.earthworksCost : 0);
-  var profit = totalEx - totalCost, margin = totalEx === 0 ? 0 : profit / totalEx;
-  var g1 = 1 + r.gst, engEx = r.engineeringFee, pmBalEx = Math.max(0, extraEx - engEx), engShort = r.pmEnabled && extraEx < engEx; if (!r.pmEnabled) { engEx = 0; pmBalEx = 0; }
+  var siteEx = r.siteFeeEnabled !== false && L > 0 ? r.siteFee : 0;
+  var totalEx = quoteEx + siteEx + earthEx, g1 = 1 + r.gst;
+  var contractorMargin = quoteEx - cost, joshFee = f * quoteEx, joshShare = k * contractorMargin, joshTotal = joshFee + joshShare + siteEx;
   return {
     input: { length: L, height: visibleHeight, type: type }, visibleHeight: visibleHeight, pricedHeight: isLime ? visibleHeight : pricedHeight, heightAdjusted: !isLime && pricedHeight !== visibleHeight, layers: layers, faceArea: face,
     mesh: type === "galfan" ? { kind: "Galfan panels", perMetre: galfanPerM, panels1x05: galfanPanels1x05, baffles05x05: galfanBaffles, hooks: hooks, cost: meshCost }
@@ -75,11 +81,13 @@ function calcQuote(length, height, type, rates) {
     clips: type === "limestone" ? 0 : clips,
     rock: type === "limestone" ? null : { m3: rockM3, tonnes: rockT, loads: rockLoads, cost: rockCost },
     geotextile: type === "limestone" ? null : { rolls: geoRolls, cost: geoCost },
-    labour: type === "limestone" ? null : { days: gabDays, cost: gabLabour },
-    limestone: { blocksPerMetre: bpm, blocks: blocks, quote: limeQuote },
-    wallCost: cost, cost: totalCost, quoteEx: quoteEx, quoteInc: quoteEx * g1,
-    earthworksEnabled: r.earthworksEnabled !== false, earthworksTBC: earthTBC, earthworksEx: earthEx, earthworksInc: earthEx * g1, extraEx: extraEx, extraInc: extraEx * g1, pm: { enabled: !!r.pmEnabled, totalEx: extraEx, totalInc: extraEx * g1, engineeringEx: engEx, engineeringInc: engEx * g1, balanceEx: pmBalEx, balanceInc: pmBalEx * g1, engineeringExceedsPm: engShort, shortfallEx: engShort ? engEx - extraEx : 0 }, totalEx: totalEx, totalInc: totalEx * g1, gstAmount: totalEx * r.gst,
-    wallMargin: quoteEx === 0 ? 0 : (quoteEx - cost) / quoteEx, profit: profit, margin: margin, belowMin: margin < r.minMargin
+    labour: { days: isLime ? limeDays : gabDays, cost: isLime ? limeLabour : gabLabour, m2PerDay: isLime ? r.limestoneM2PerDay : r.gabionM2PerDay },
+    limestone: { blocksPerMetre: bpm, blocks: blocks, quote: limeQuote, cost: limeCost, joshPct: targetPct },
+    materialsCost: matCost, contractorCost: cost, contractorMargin: contractorMargin, quoteEx: quoteEx, quoteInc: quoteEx * g1,
+    siteFeeEnabled: r.siteFeeEnabled !== false, siteFeeEx: siteEx, siteFeeInc: siteEx * g1,
+    earthworksEnabled: r.earthworksEnabled !== false, earthworksTBC: earthTBC, earthworksEx: earthEx, earthworksInc: earthEx * g1,
+    pm: { enabled: !!r.pmEnabled, pct: f }, totalEx: totalEx, totalInc: totalEx * g1, gstAmount: totalEx * r.gst,
+    josh: { fee: joshFee, share: joshShare, siteFee: siteEx, total: joshTotal, pct: totalEx ? joshTotal / totalEx : 0, wallOnly: joshFee + joshShare, wallOnlyPct: quoteEx ? (joshFee + joshShare) / quoteEx : 0, targetPct: targetPct }
   };
 }
 if (typeof module !== "undefined" && module.exports) module.exports = { calcQuote: calcQuote, limestoneBpm: limestoneBpm, DEFAULT_RATES: DEFAULT_RATES };
