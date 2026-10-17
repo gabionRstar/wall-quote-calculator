@@ -15,6 +15,7 @@ input,select{background-color:#141416;width:100%;appearance:none;background-imag
 .f{margin-bottom:14px}.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .seg button{padding:12px 4px;border-radius:10px;border:1px solid var(--c3);background:#141416;color:var(--t);font:600 13px Inter;cursor:pointer}
 .seg button.on{background:var(--y);color:#111;border-color:var(--y)}
+#type{grid-template-columns:repeat(4,1fr)}#type button{padding:12px 2px;font-size:12px}.cta{display:block;text-align:center;background:var(--y);color:#111;font:700 14px Inter;text-transform:uppercase;letter-spacing:.5px;padding:12px;border-radius:10px;text-decoration:none;margin-top:12px}
 .pm{grid-template-columns:repeat(5,1fr)}.pm.off{opacity:.35;pointer-events:none}.hgt{grid-template-columns:repeat(6,1fr)}
 .total{background:var(--y);color:#111;border-radius:14px;padding:18px;margin-bottom:14px}
 .total .k{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
@@ -34,21 +35,21 @@ tr.h td{color:var(--y);font-weight:700;text-transform:uppercase;font-size:11px;l
  <div class="f"><label for="len">Wall length (m)</label><input id="len" type="number" inputmode="decimal" min="0" step="0.5" value="10"></div>
  <div class="f"><label>Wall height (m)</label><select id="hgt"></select><div class="note" id="hnote" style="margin-top:6px;color:var(--y)"></div></div>
  <div class="f" style="margin:0"><label>Wall type</label><div class="seg" id="type">
-  <button data-v="galfan" class="on">Gabion Galfan</button><button data-v="galvanised">Gabion galvanised</button><button data-v="limestone">Limestone</button></div></div>
+  <button data-v="galfan" class="on">Gabion Galfan</button><button data-v="galvanised">Gabion galvanised</button><button data-v="limestone">Limestone</button><button data-v="diy">DIY kit</button></div></div>
 </div>
 <label class="toggle"><input type="checkbox" id="internal" checked> Show internal cost &amp; margin (Josh's view)</label>
 </div><div>
 <div class="total"><div class="k" id="tlabel">Quote inc GST</div><div class="v" id="tval">$0</div><div class="s" id="tsub"></div></div>
-<div class="card"><label class="toggle" style="margin:0 0 10px"><input type="checkbox" id="earthon"> Charge earthworks to customer</label><label class="toggle" style="margin:0 0 10px"><input type="checkbox" id="siteon"> Add site &amp; project fee ($2,500 ex GST)</label><label class="toggle" style="margin:0 0 8px"><input type="checkbox" id="pmon"> Management fee (added to customer price)</label><div class="seg pm" id="pmseg"></div></div>
-<div class="card"><h2>Breakdown</h2><table id="bd"></table></div>
+<div class="card" id="feecard"><label class="toggle" style="margin:0 0 10px"><input type="checkbox" id="earthon"> Charge earthworks to customer</label><label class="toggle" style="margin:0 0 10px"><input type="checkbox" id="siteon"> Add site &amp; project fee ($2,500 ex GST)</label><label class="toggle" style="margin:0 0 8px"><input type="checkbox" id="pmon"> Management fee (added to customer price)</label><div class="seg pm" id="pmseg"></div></div>
+<div class="card"><h2>Breakdown</h2><table id="bd"></table><div id="diyextra"></div></div>
 </div></div>
 <div class="card"><details><summary>Rates</summary>
 <p class="note">All ex GST. Changes save on this device only. Limestone blocks come from the original limestone calculator. Gabion is priced so your % matches limestone at the same size.</p>
 <div class="rates" id="rates"></div><button class="btn" id="reset">Reset to default rates</button></details></div>
 <p class="note">Gabion materials from the 2026 sheet. Clips allowance is an estimate; geotextile, freight and overheads not yet priced.</p>
 </div>
-<script src="calc.js?v=ea059b3"></script><script>
-if(typeof CALC_VERSION==="undefined"||CALC_VERSION<5){if(!/[?&]r=/.test(location.search))location.replace(location.pathname+"?r="+Date.now());}
+<script src="calc.js?v=diy6"></script><script>
+if(typeof CALC_VERSION==="undefined"||CALC_VERSION<6){if(!/[?&]r=/.test(location.search))location.replace(location.pathname+"?r="+Date.now());}
 var KEY="wqc-rates-v4",LABELS={dayRate:"Labour $/day",limestoneM2PerDay:"Limestone build m²/day",gabionM2PerDay:"Gabion build m²/day",dayRounding:"Round days up to",blockSell:"Limestone sell $/block",blockMaterial:"Limestone material $/block",contractorShare:"Josh share of contractor margin (0.1)",extraPct:"Management fee (0.1)",siteFee:"Site &amp; project fee $",earthworksFee:"Earthworks $",earthworksMaxLength:"Earthworks if length ≤ m",panel1x05:"Galfan 1x0.5 $",panel05x05:"Galfan 0.5x0.5 $",braceHook:"Brace hook $",hooksPerLayerPerM:"Hooks /layer/m",sheetPrice:"Galv sheet $",sheetLength:"Galv sheet L m",sheetWidth:"Galv sheet W m",meshWaste:"Mesh waste (0.1)",clipsPerLayerPerM:"Clips $/layer/m",rockLoadPrice:"Rock $/load",rockLoadTonnes:"Load tonnes",rockDensity:"Rock t/m³",rockM3PerLayerPerM:"Rock m³/layer/m",rockBuffer:"Rock buffer",geoRollPrice:"Geotex $/roll",geoMetresPerRoll:"Geotex m/roll",gst:"GST (0.1)"};
 function load(){var d=JSON.parse(JSON.stringify(DEFAULT_RATES)),s=null;try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){}
  if(!s||typeof s!=="object")return d;
@@ -67,6 +68,9 @@ function buildPM(){document.getElementById("siteon").checked=R.siteFeeEnabled!==
 function render(){try{render0()}catch(e){document.getElementById("bd").innerHTML=row("Error: "+e.message+" — please reload the page");if(window.console)console.error(e)}}
 function render0(){var L=+document.getElementById("len").value||0,internal=document.getElementById("internal").checked,q;
  try{q=calcQuote(L,H,T,R)}catch(e){document.getElementById("tval").textContent="–";document.getElementById("bd").innerHTML=row(e.message);return}
+ document.getElementById("feecard").style.display=T=="diy"?"none":"";document.getElementById("diyextra").innerHTML="";
+ document.getElementById("tlabel").textContent="Quote inc GST";
+ if(q.diy){renderDiy(q,L,internal);return}
  var names={galfan:"Gabion wall – Galfan mesh",galvanised:"Gabion wall – galvanised mesh",limestone:"Limestone block wall"};
  document.getElementById("tval").textContent=$(q.totalInc);
  document.getElementById("tsub").textContent=names[T]+" · "+n2(L)+" m × "+H.toFixed(1)+" m";
@@ -86,6 +90,17 @@ function render0(){var L=+document.getElementById("len").value||0,internal=docum
   h+=row("Quote",null,"h")+row("Wall, inc GST",$(q.quoteInc))+(q.pm.enabled?row(fl+", inc GST",$(q.pm.inc)):"")+(q.siteFeeEx?row(sl+", inc GST",$(q.siteFeeInc)):"")+(q.earthworksEx?row("Earthworks, inc GST",$(q.earthworksInc)):"")+(q.earthworksTBC?row("Earthworks","TBC"):"")+row("<b>Total inc GST</b>","<b>"+$(q.totalInc)+"</b>");
  }
  document.getElementById("bd").innerHTML=h;}
+function renderDiy(q,L,internal){
+ document.getElementById("tlabel").textContent="Kit + stone delivered, inc GST";
+ document.getElementById("tval").textContent=diyMoney(q.totalInc);
+ var nt=q.heightAdjusted?"DIY kits come in 0.5 m steps: priced as "+q.pricedHeight.toFixed(1)+" m.":"";
+ document.getElementById("tsub").textContent="DIY kit · "+q.lengthDisplay+" × "+q.pricedHeight.toFixed(1)+" m · inc GST · kit + delivered stone only, not installed"+(nt?" · "+nt:"");document.getElementById("hnote").textContent=nt;
+ var h=row("Gabion kit + stone · delivered",null,"h")+row("Gabion build",q.buildType)+row("Required kit / lifts",q.lifts)+row("Gabion kit"+(internal?" ("+q.input.length+" m × "+diyMoney(q.kitRatePerMetre)+"/lm)":""),diyMoney(q.kitCost))+row(q.stoneLabel+(internal?" @ $"+DIY_PRICE.stonePerM3+"/m³":""),diyMoney(q.stoneCost))+row("Kit + stone / lm",diyMoney(q.perMetre))+row("Geotextile required",q.geotextileLabel)+row("<b>Gabion kit + stone delivered</b>","<b>"+diyMoney(q.totalInc)+"</b>");
+ h+=row("Your wall package",null,"h")+row("Gabion kit",q.cartKit)+row("Geotextile",q.cartGeotextile);
+ h+=row("Limestone comparison · installed by contractor",null,"h")+row("1 m reconstituted limestone blocks",q.limestone.blocksLabel)+row("Installed price","$"+DIY_PRICE.limestonePerBlock+" / block")+row("Limestone blocks installed",q.limestone.totalLabel)+row("<b>Approximate saving</b>",'<span class="ok">'+q.saving.label+" · "+q.saving.pctLabel+"</span>");
+ if(internal)h+=row("Josh's view",null,"h")+row("Rates (from go.gabionfabrication.com/calculator)","0.5 m kit $"+DIY_PRICE.kit05PerMetre+"/lm · 1.0 m kit $"+DIY_PRICE.kit10PerMetre+"/lm · stone $"+DIY_PRICE.stonePerM3+"/m³")+row("Cost &amp; margin","Not in the kit calculator");
+ document.getElementById("bd").innerHTML=h;
+ document.getElementById("diyextra").innerHTML='<a class="cta" target="_blank" rel="noopener" href="'+q.productUrl+'">Get my kit now!</a><p class="note">Not an installed gabion price. Kit + delivered stone only. Gabion installation labour, excavation, plant, engineering and permits are not included. Limestone figure includes contract labour at $120 incl. GST per block. Estimate only, not a quote.</p>';}
 document.getElementById("hgt").onchange=function(){H=+this.value;render()};
 document.getElementById("type").onclick=function(e){if(!e.target.dataset.v)return;T=e.target.dataset.v;[].forEach.call(this.children,function(b){b.classList.toggle("on",b.dataset.v==T)});render()};
 document.getElementById("pmseg").onclick=function(e){if(!e.target.dataset.v)return;R.extraPct=+e.target.dataset.v;localStorage.setItem(KEY,JSON.stringify(R));var i=document.querySelector('[data-k="extraPct"]');if(i)i.value=R.extraPct;buildPM();render()};

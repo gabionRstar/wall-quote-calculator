@@ -1,4 +1,4 @@
-var CALC_VERSION = 5;
+var CALC_VERSION = 6;
 /* Gabion Fabrication – Wall Quote Calculator. All $ ex GST unless "Inc".
    Model (Josh, Oct 2026): limestone = blocks x $90. Contractor cost = materials + labour (day rate, rounded to 0.5 day).
    Josh income = mgmt fee (fee% x wall price, ADDED ON TOP as its own customer line) + 10% of contractor margin + flat site & project fee.
@@ -35,8 +35,53 @@ var DEFAULT_RATES = {
 };
 function roundUp(x, d) { var f = Math.pow(10, d || 0); return Math.ceil(+(x * f).toFixed(9)) / f; }
 function lookupBlocks(r, h) { var k = String(+h); var v = r.blocksPerMetre[k]; if (v === undefined) throw new Error("No blocks-per-metre entry for " + h + " m"); return v; }
-/* type: "galfan" | "galvanised" | "limestone" */
+/* DIY kit: exact port of go.gabionfabrication.com/calculator (GHL custom code, same as calculator-test a18225c calculator.js).
+   Customer prices as the original shows them (inc GST, no GST added). Kit + delivered stone only: no labour, contractor, fees or earthworks.
+   The original only offers 0.5/1/1.5/2/2.5/3 m; other heights are priced at the next 0.5 m step up. */
+var DIY_PRICE = { kit05PerMetre: 94, kit10PerMetre: 170, stonePerM3: 116, stonePer500LiftPerMetre: 0.25, limestonePerBlock: 120, geotextileRollLength: 50 };
+var DIY_HEIGHTS = {
+  "0.5": { displayedLifts: 1, stoneLifts: 1, calculatorRate: DIY_PRICE.kit05PerMetre },
+  "1": { displayedLifts: 1, stoneLifts: 2, calculatorRate: DIY_PRICE.kit10PerMetre },
+  "1.5": { displayedLifts: 3, stoneLifts: 3, calculatorRate: DIY_PRICE.kit05PerMetre * 3 },
+  "2": { displayedLifts: 4, stoneLifts: 4, calculatorRate: DIY_PRICE.kit05PerMetre * 4 },
+  "2.5": { displayedLifts: 5, stoneLifts: 5, calculatorRate: DIY_PRICE.kit05PerMetre * 5 },
+  "3": { displayedLifts: 6, stoneLifts: 6, calculatorRate: DIY_PRICE.kit05PerMetre * 6 }
+};
+var DIY_LIMESTONE = { "0.5": { min: 3, max: 4 }, "1": { min: 5, max: 5 }, "1.5": { min: 10, max: 11 }, "2": { min: 14, max: 15 }, "2.5": { min: 18, max: 20 }, "3": { min: 24, max: 26 } };
+var DIY_PRODUCTS = { halfMetre: "https://gabionfabrication.com.au/products/galfan%C2%AE-welded-mesh-gabion-kit-0-5m-high-x-0-5m-wide-x-0-5m-long", oneMetre: "https://gabionfabrication.com.au/products/galfan%C2%AE-welded-mesh-gabion-kit-0-5m-wide-x-1m-high-x-2m-long" };
+function diyMoney(v) { return "$" + Math.round(v).toLocaleString("en-AU"); }
+function diyMoneyRange(a, b) { return Math.round(a) === Math.round(b) ? diyMoney(a) : diyMoney(a) + " – " + diyMoney(b); }
+function calcDiy(length, height) {
+  var visibleHeight = +height;
+  if (!(visibleHeight >= 0.4 && visibleHeight <= 3.0)) throw new Error("Height must be 0.4–3.0 m");
+  var hp = Math.min(3.0, roundUp(visibleHeight / 0.5) * 0.5), wallHeight = String(hp);
+  var wallLength = Number(length) || 1;   // original: Number(input) || 1
+  var gabion = DIY_HEIGHTS[wallHeight], limestone = DIY_LIMESTONE[wallHeight];
+  var kitCost = wallLength * gabion.calculatorRate;
+  var stoneVolume = wallLength * gabion.stoneLifts * DIY_PRICE.stonePer500LiftPerMetre;
+  var stoneCost = stoneVolume * DIY_PRICE.stonePerM3;
+  var gabionTotal = kitCost + stoneCost, gabionPerMetre = gabionTotal / wallLength;
+  var geotextileRolls = Math.ceil(wallLength / DIY_PRICE.geotextileRollLength);
+  var minimumBlocks = wallLength * limestone.min, maximumBlocks = wallLength * limestone.max;
+  var minimumLimestoneCost = minimumBlocks * DIY_PRICE.limestonePerBlock, maximumLimestoneCost = maximumBlocks * DIY_PRICE.limestonePerBlock;
+  var minimumSaving = Math.max(0, minimumLimestoneCost - gabionTotal), maximumSaving = Math.max(0, maximumLimestoneCost - gabionTotal);
+  var minimumPercent = minimumLimestoneCost > 0 ? Math.round((minimumSaving / minimumLimestoneCost) * 100) : 0;
+  var maximumPercent = maximumLimestoneCost > 0 ? Math.round((maximumSaving / maximumLimestoneCost) * 100) : 0;
+  var buildType = wallHeight === "0.5" ? "1 × 0.5m high kit" : wallHeight === "1" ? "1 × 1.0m high kit" : gabion.displayedLifts + " × 500mm lifts";
+  var cartKit = wallHeight === "0.5" ? "0.5m high × " + wallLength + "m" : wallHeight === "1" ? "1.0m high × " + wallLength + "m" : gabion.displayedLifts + " × 500mm lifts × " + wallLength + "m";
+  return {
+    diy: true, input: { length: wallLength, height: visibleHeight, type: "diy" }, visibleHeight: visibleHeight, pricedHeight: hp, heightAdjusted: hp !== visibleHeight, faceArea: wallLength * visibleHeight,
+    lengthDisplay: wallLength + (wallLength === 1 ? " metre" : " metres"), buildType: buildType, lifts: gabion.displayedLifts, stoneLifts: gabion.stoneLifts, kitRatePerMetre: gabion.calculatorRate,
+    kitCost: kitCost, stoneM3: stoneVolume, stoneLabel: "Stone (~" + stoneVolume.toFixed(2) + " m³)", stoneCost: stoneCost, perMetre: gabionPerMetre, totalInc: gabionTotal,
+    geotextileRolls: geotextileRolls, geotextileLabel: geotextileRolls + (geotextileRolls === 1 ? " roll" : " rolls"), cartKit: cartKit, cartGeotextile: geotextileRolls + (geotextileRolls === 1 ? " × 50m roll" : " × 50m rolls"),
+    productUrl: wallHeight === "1" ? DIY_PRODUCTS.oneMetre : DIY_PRODUCTS.halfMetre,
+    limestone: { blocksMin: minimumBlocks, blocksMax: maximumBlocks, blocksLabel: minimumBlocks === maximumBlocks ? minimumBlocks + " blocks" : minimumBlocks + " – " + maximumBlocks + " blocks", costMin: minimumLimestoneCost, costMax: maximumLimestoneCost, totalLabel: diyMoneyRange(minimumLimestoneCost, maximumLimestoneCost) },
+    saving: { min: minimumSaving, max: maximumSaving, label: diyMoneyRange(minimumSaving, maximumSaving), pctMin: minimumPercent, pctMax: maximumPercent, pctLabel: minimumPercent === maximumPercent ? minimumPercent + "%" : minimumPercent + "% – " + maximumPercent + "%" }
+  };
+}
+/* type: "galfan" | "galvanised" | "limestone" | "diy" */
 function calcQuote(length, height, type, rates) {
+  if (type === "diy") return calcDiy(length, height);
   var r = Object.assign({}, DEFAULT_RATES, rates || {});
   if (rates && rates.blocksPerMetre) r.blocksPerMetre = rates.blocksPerMetre;
   var visibleHeight = +height;
@@ -92,4 +137,4 @@ function calcQuote(length, height, type, rates) {
     josh: { fee: joshFee, share: joshShare, siteFee: siteEx, total: joshTotal, pct: totalEx ? joshTotal / totalEx : 0, wallOnly: joshFee + joshShare, wallOnlyPct: quoteEx ? (joshFee + joshShare) / quoteEx : 0, targetPct: targetPct, matchPct: quoteEx ? (mb * quoteEx + joshShare) / quoteEx : 0 }
   };
 }
-if (typeof module !== "undefined" && module.exports) module.exports = { calcQuote: calcQuote, limestoneBpm: limestoneBpm, DEFAULT_RATES: DEFAULT_RATES };
+if (typeof module !== "undefined" && module.exports) module.exports = { calcQuote: calcQuote, calcDiy: calcDiy, DIY_PRICE: DIY_PRICE, limestoneBpm: limestoneBpm, DEFAULT_RATES: DEFAULT_RATES };
