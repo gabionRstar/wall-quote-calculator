@@ -1,0 +1,39 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wall Quote Calculator – Gabion Fabrication</title><meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--y:#FFCB00;--c:#1d1d1f;--c2:#2a2a2d;--c3:#3a3a3e;--t:#f3f3f3;--m:#a8a8ad}
+*{box-sizing:border-box}body{margin:0;background:var(--c);color:var(--t);font:15px/1.45 Inter,system-ui,sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:20px 16px 60px}
+h1,h2{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.5px;text-transform:uppercase;margin:0}
+h1{font-size:34px;line-height:1.05}h1 span{color:var(--y)}h2{font-size:20px;margin-bottom:10px}
+.brand{font-size:11px;letter-spacing:3px;color:var(--y);font-weight:700;margin-bottom:6px}.sub{color:var(--m);margin:6px 0 18px}
+.card{background:var(--c2);border-radius:14px;padding:16px;margin-bottom:14px;border:1px solid var(--c3)}
+label{display:block;font-size:12px;font-weight:600;color:var(--m);text-transform:uppercase;letter-spacing:1px;margin:0 0 6px}
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--c3);background:#141416;color:var(--t);font:16px Inter}
+.f{margin-bottom:14px}.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg button{padding:12px 4px;border-radius:10px;border:1px solid var(--c3);background:#141416;color:var(--t);font:600 13px Inter;cursor:pointer}
+.seg button.on{background:var(--y);color:#111;border-color:var(--y)}
+.total{background:var(--y);color:#111;border-radius:14px;padding:18px;margin-bottom:14px}
+.total .k{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase}.total .v{font-family:Anton,sans-serif;font-size:46px;line-height:1.1}.total .s{font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:14px}td{padding:7px 0;border-bottom:1px solid var(--c3)}td:last-child{text-align:right;font-weight:600}
+tr.h td{color:var(--y);font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:1px;padding-top:14px}tr.b td{font-weight:700}
+.toggle{display:flex;align-items:center;gap:8px;font-size:14px;margin:0 0 8px;text-transform:none;letter-spacing:0;color:var(--t)}.toggle input{width:auto;accent-color:#FFCB00}
+.rates{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;margin-top:12px}.rates label{font-size:10px;letter-spacing:.5px}.rates input{padding:8px;font-size:14px}
+.btn{background:transparent;border:1px solid var(--y);color:var(--y);padding:10px 14px;border-radius:10px;font:600 13px Inter;cursor:pointer;margin-top:12px}
+.note{font-size:12px;color:var(--m)}details summary{cursor:pointer;font-family:Anton;text-transform:uppercase;font-size:18px}
+</style></head><body><div class="wrap">
+<div class="brand">GABION FABRICATION · WA</div><h1>Wall <span>Quote</span> Calculator</h1>
+<p class="sub">Contractor cost + management fee. Total shown inc GST.</p>
+<div class="card">
+ <div class="f"><label for="len">Wall length (m)</label><input id="len" type="number" inputmode="decimal" min="0" step="0.5" value="10"></div>
+ <div class="f"><label for="hgt">Wall height (m)</label><select id="hgt"></select><div class="note" id="hnote" style="margin-top:6px;color:var(--y)"></div></div>
+ <div class="f"><label>Wall type</label><div class="seg" id="type"><button data-v="galfan" class="on">Gabion Galfan</button><button data-v="galvanised">Gabion galvanised</button><button data-v="limestone">Limestone</button></div></div>
+ <label class="toggle"><input type="checkbox" id="ew"> Add earthworks fee</label>
+ <div class="f" style="margin:0"><label for="ewAmt">Earthworks amount ($ ex GST)</label><input id="ewAmt" type="number" inputmode="decimal" min="0" step="100"></div>
+</div>
+<div class="total"><div class="k">Total inc GST</div><div class="v" id="tot">$0</div><div class="s" id="tots"></div></div>
+<div class="card"><h2>Breakdown</h2><table id="bd"></table></div>
+<div class="card"><details><summary>Rates</summary><div class="rates" id="rates"></div><button class="btn" id="reset">Reset to defaults</button></details></div>
+</div>
+<script src="cost.js?v=s1"></script><script src="app.js?v=s1"></script></body></html>
