@@ -98,7 +98,7 @@ function calcQuote(length, height, type, rates) {
   var galvArea = L * (layers * meshAreaPerLayer + r.meshLid) * (1 + r.meshWaste);
   var galvSheets = roundUp(galvArea / (r.sheetLength * r.sheetWidth));
   var clips = type === "galfan" ? 0 : r.clipsPerLayerPerM * layers * L;
-  var boxCols = Math.ceil(L / 2), box10 = Math.floor(H + 1e-9), box05 = H - box10 >= 0.5 - 1e-9 ? 1 : 0;
+  var boxCols = Math.ceil(L / 2), over1 = H > 1 + 1e-9, box10 = over1 ? 0 : Math.floor(H + 1e-9), box05 = over1 ? Math.round(H / 0.5) : (H - box10 >= 0.5 - 1e-9 ? 1 : 0); // over 1 m: all 0.5 x 0.5 cages
   var boxCost = boxCols * (box10 * r.box2x05x10 + box05 * r.box2x05x05);
   var rockM3 = r.rockM3PerLayerPerM * layers * L * (1 + r.rockBuffer), rockT = rockM3 * r.rockDensity;
   var rockLoads = roundUp(rockT / r.rockLoadTonnes), rockCost = rockT * (r.rockLoadPrice / r.rockLoadTonnes);

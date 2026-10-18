@@ -48,7 +48,7 @@ tr.h td{color:var(--y);font-weight:700;text-transform:uppercase;font-size:11px;l
 <div class="rates" id="rates"></div><button class="btn" id="reset">Reset to default rates</button></details></div>
 <p class="note">Gabion materials from the 2026 sheet. Clips allowance is an estimate; geotextile, freight and overheads not yet priced.</p>
 </div>
-<script src="calc.js?v=diy12"></script><script>
+<script src="calc.js?v=diy13"></script><script>
 if(typeof CALC_VERSION==="undefined"||CALC_VERSION<6){if(!/[?&]r=/.test(location.search))location.replace(location.pathname+"?r="+Date.now());}
 var KEY="wqc-rates-v4",LABELS={dayRate:"Labour $/day",limestoneM2PerDay:"Limestone build m²/day",gabionM2PerDay:"Gabion build m²/day",dayRounding:"Round days up to",blockSell:"Limestone sell $/block",blockMaterial:"Limestone material $/block",contractorShare:"Josh share of contractor margin (0.1)",extraPct:"Management fee (0.1)",siteFee:"Site &amp; project fee $",earthworksFee:"Earthworks $",earthworksMaxLength:"Earthworks if length ≤ m",box2x05x10:"Galfan box 2.0×0.5×1.0 $",box2x05x05:"Galfan box 2.0×0.5×0.5 $",sheetPrice:"Galv sheet $",sheetLength:"Galv sheet L m",sheetWidth:"Galv sheet W m",meshWaste:"Mesh waste (0.1)",clipsPerLayerPerM:"Clips $/layer/m",rockLoadPrice:"Rock $/load",rockLoadTonnes:"Load tonnes",rockDensity:"Rock t/m³",rockM3PerLayerPerM:"Rock m³/layer/m",rockBuffer:"Rock buffer",geoRollPrice:"Geotex $/roll",geoMetresPerRoll:"Geotex m/roll",gst:"GST (0.1)"};
 function load(){var d=JSON.parse(JSON.stringify(DEFAULT_RATES)),s=null;try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){}
