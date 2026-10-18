@@ -25,7 +25,7 @@ var DEFAULT_RATES = {
   // Galvanised sheets
   sheetLength: 2.4, sheetWidth: 4.5, sheetPrice: 100,
   meshFront: 0.5, meshBack: 0.5, meshBase: 0.5, meshBaffle: 0.25, meshLid: 0.5, meshWaste: 0.10,
-  box2x05x05: 107.83, box2x05x10: 172.05,   // Galfan weldmesh boxes ex GST (RFQ 14 May 2025), 2.0 L x 0.5 D x 0.5/1.0 H
+  box2x05x05: 107.83, box2x05x10: 172.05, boxHandling: 0.15,   // Galfan weldmesh boxes ex GST (RFQ 14 May 2025), 2.0 L x 0.5 D x 0.5/1.0 H
   clipsPerLayerPerM: 8,      // ESTIMATE
   rockLoadPrice: 1100, rockLoadTonnes: 12.5, rockDensity: 1.8, rockM3PerLayerPerM: 0.25, rockBuffer: 0.075,
   geoMetresPerRoll: 50, geoRollPrice: 0,
@@ -99,7 +99,7 @@ function calcQuote(length, height, type, rates) {
   var galvSheets = roundUp(galvArea / (r.sheetLength * r.sheetWidth));
   var clips = type === "galfan" ? 0 : r.clipsPerLayerPerM * layers * L;
   var boxCols = Math.ceil(L / 2), over1 = H > 1 + 1e-9, box10 = over1 ? 0 : Math.floor(H + 1e-9), box05 = over1 ? Math.round(H / 0.5) : (H - box10 >= 0.5 - 1e-9 ? 1 : 0); // over 1 m: all 0.5 x 0.5 cages
-  var boxCost = boxCols * (box10 * r.box2x05x10 + box05 * r.box2x05x05);
+  var boxBase = boxCols * (box10 * r.box2x05x10 + box05 * r.box2x05x05), boxHandling = boxBase * (r.boxHandling != null ? r.boxHandling : 0.15), boxCost = boxBase + boxHandling;
   var rockM3 = r.rockM3PerLayerPerM * layers * L * (1 + r.rockBuffer), rockT = rockM3 * r.rockDensity;
   var rockLoads = roundUp(rockT / r.rockLoadTonnes), rockCost = rockT * (r.rockLoadPrice / r.rockLoadTonnes);
   var geoRolls = roundUp(L / r.geoMetresPerRoll), geoCost = geoRolls * r.geoRollPrice;
@@ -125,7 +125,7 @@ function calcQuote(length, height, type, rates) {
   var contractorMargin = quoteEx - cost, joshFee = pmEx, joshShare = k * contractorMargin, joshTotal = joshFee + joshShare + siteEx;
   return {
     input: { length: L, height: visibleHeight, type: type }, visibleHeight: visibleHeight, pricedHeight: isLime ? visibleHeight : pricedHeight, heightAdjusted: !isLime && pricedHeight !== visibleHeight, layers: layers, faceArea: face,
-    mesh: type === "galfan" ? { kind: "Galfan weldmesh boxes", cols: boxCols, n10: boxCols * box10, n05: boxCols * box05, cost: meshCost }
+    mesh: type === "galfan" ? { kind: "Galfan weldmesh boxes", cols: boxCols, n10: boxCols * box10, n05: boxCols * box05, base: boxBase, handling: boxHandling, cost: meshCost }
         : type === "galvanised" ? { kind: "Galvanised sheets 2.4x4.5", areaM2: galvArea, sheets: galvSheets, cost: meshCost } : null,
     hooks: type === "galfan" ? hooks : 0,
     clips: type === "limestone" ? 0 : clips,
