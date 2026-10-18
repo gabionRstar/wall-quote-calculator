@@ -28,7 +28,7 @@ var DEFAULT_RATES = {
   clipsPerLayerPerM: 8,      // ESTIMATE
   rockLoadPrice: 1100, rockLoadTonnes: 12.5, rockDensity: 1.8, rockM3PerLayerPerM: 0.25, rockBuffer: 0.075,
   geoMetresPerRoll: 50, geoRollPrice: 0,
-  dayRate: 2500, limestoneM2PerDay: 18, gabionM2PerDay: 9, dayRounding: 0.5, blockMaterial: 32, contractorShare: 0.10, siteFee: 2500, siteFeeEnabled: true,
+  dayRate: 1500, limestoneM2PerDay: 18, gabionM2PerDay: 9, dayRounding: 0.5, blockMaterial: 32, contractorShare: 0.10, siteFee: 2500, siteFeeEnabled: true,
   blockSell: 90, // limestone sell price per block, all-in (materials + labour)
   blocksPerMetre: limestoneTable(),   // from original limestone calculator (was sheet: 3.5/5/7/14.5/19/25)
   earthworksFee: 3000, earthworksMaxLength: 50, extraPct: 0.10, pmEnabled: true, earthworksEnabled: true, pmOptions: [0.05, 0.10, 0.15, 0.16, 0.20], gst: 0.10

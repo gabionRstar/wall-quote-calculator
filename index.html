@@ -48,12 +48,13 @@ tr.h td{color:var(--y);font-weight:700;text-transform:uppercase;font-size:11px;l
 <div class="rates" id="rates"></div><button class="btn" id="reset">Reset to default rates</button></details></div>
 <p class="note">Gabion materials from the 2026 sheet. Clips allowance is an estimate; geotextile, freight and overheads not yet priced.</p>
 </div>
-<script src="calc.js?v=diy8"></script><script>
+<script src="calc.js?v=diy9"></script><script>
 if(typeof CALC_VERSION==="undefined"||CALC_VERSION<6){if(!/[?&]r=/.test(location.search))location.replace(location.pathname+"?r="+Date.now());}
 var KEY="wqc-rates-v4",LABELS={dayRate:"Labour $/day",limestoneM2PerDay:"Limestone build m²/day",gabionM2PerDay:"Gabion build m²/day",dayRounding:"Round days up to",blockSell:"Limestone sell $/block",blockMaterial:"Limestone material $/block",contractorShare:"Josh share of contractor margin (0.1)",extraPct:"Management fee (0.1)",siteFee:"Site &amp; project fee $",earthworksFee:"Earthworks $",earthworksMaxLength:"Earthworks if length ≤ m",panel1x05:"Galfan 1x0.5 $",panel05x05:"Galfan 0.5x0.5 $",braceHook:"Brace hook $",hooksPerLayerPerM:"Hooks /layer/m",sheetPrice:"Galv sheet $",sheetLength:"Galv sheet L m",sheetWidth:"Galv sheet W m",meshWaste:"Mesh waste (0.1)",clipsPerLayerPerM:"Clips $/layer/m",rockLoadPrice:"Rock $/load",rockLoadTonnes:"Load tonnes",rockDensity:"Rock t/m³",rockM3PerLayerPerM:"Rock m³/layer/m",rockBuffer:"Rock buffer",geoRollPrice:"Geotex $/roll",geoMetresPerRoll:"Geotex m/roll",gst:"GST (0.1)"};
 function load(){var d=JSON.parse(JSON.stringify(DEFAULT_RATES)),s=null;try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){}
  if(!s||typeof s!=="object")return d;
  Object.keys(LABELS).forEach(function(k){var v=parseFloat(s[k]);if(isFinite(v))d[k]=v});
+ if(!s.dayRate1500){if(+s.dayRate===2500)d.dayRate=1500;s.dayRate1500=1;}d.dayRate1500=1;
  ["pmEnabled","earthworksEnabled","siteFeeEnabled"].forEach(function(k){if(typeof s[k]==="boolean")d[k]=s[k]});
  if(isFinite(parseFloat(s.extraPct)))d.extraPct=parseFloat(s.extraPct);
  return d;}
