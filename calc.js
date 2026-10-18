@@ -25,6 +25,7 @@ var DEFAULT_RATES = {
   // Galvanised sheets
   sheetLength: 2.4, sheetWidth: 4.5, sheetPrice: 100,
   meshFront: 0.5, meshBack: 0.5, meshBase: 0.5, meshBaffle: 0.25, meshLid: 0.5, meshWaste: 0.10,
+  box2x05x05: 107.83, box2x05x10: 172.05,   // Galfan weldmesh boxes ex GST (RFQ 14 May 2025), 2.0 L x 0.5 D x 0.5/1.0 H
   clipsPerLayerPerM: 8,      // ESTIMATE
   rockLoadPrice: 1100, rockLoadTonnes: 12.5, rockDensity: 1.8, rockM3PerLayerPerM: 0.25, rockBuffer: 0.075,
   geoMetresPerRoll: 50, geoRollPrice: 0,
@@ -96,7 +97,9 @@ function calcQuote(length, height, type, rates) {
   var meshAreaPerLayer = r.meshFront + r.meshBack + r.meshBase + r.meshBaffle;
   var galvArea = L * (layers * meshAreaPerLayer + r.meshLid) * (1 + r.meshWaste);
   var galvSheets = roundUp(galvArea / (r.sheetLength * r.sheetWidth));
-  var clips = r.clipsPerLayerPerM * layers * L;
+  var clips = type === "galfan" ? 0 : r.clipsPerLayerPerM * layers * L;
+  var boxCols = Math.ceil(L / 2), box10 = Math.floor(H + 1e-9), box05 = H - box10 >= 0.5 - 1e-9 ? 1 : 0;
+  var boxCost = boxCols * (box10 * r.box2x05x10 + box05 * r.box2x05x05);
   var rockM3 = r.rockM3PerLayerPerM * layers * L * (1 + r.rockBuffer), rockT = rockM3 * r.rockDensity;
   var rockLoads = roundUp(rockT / r.rockLoadTonnes), rockCost = rockT * (r.rockLoadPrice / r.rockLoadTonnes);
   var geoRolls = roundUp(L / r.geoMetresPerRoll), geoCost = geoRolls * r.geoRollPrice;
@@ -111,7 +114,7 @@ function calcQuote(length, height, type, rates) {
   var meshCost, matCost, cost, quoteEx;
   if (isLime) { meshCost = 0; matCost = limeMat; cost = limeCost; quoteEx = limeQuote; }
   else {
-    meshCost = type === "galfan" ? galfanPerM * L : galvSheets * r.sheetPrice;
+    meshCost = type === "galfan" ? boxCost : galvSheets * r.sheetPrice;
     matCost = meshCost + clips + rockCost + geoCost; cost = matCost + gabLabour;
     // (mb*P + k*(P - C)) / P = target  =>  P = k*C / (mb + k - target)
     quoteEx = cost * (1 + (r.gabionMargin != null ? r.gabionMargin : 0.10)); // cost + 10% contractor margin
@@ -122,7 +125,7 @@ function calcQuote(length, height, type, rates) {
   var contractorMargin = quoteEx - cost, joshFee = pmEx, joshShare = k * contractorMargin, joshTotal = joshFee + joshShare + siteEx;
   return {
     input: { length: L, height: visibleHeight, type: type }, visibleHeight: visibleHeight, pricedHeight: isLime ? visibleHeight : pricedHeight, heightAdjusted: !isLime && pricedHeight !== visibleHeight, layers: layers, faceArea: face,
-    mesh: type === "galfan" ? { kind: "Galfan panels", perMetre: galfanPerM, panels1x05: galfanPanels1x05, baffles05x05: galfanBaffles, hooks: hooks, cost: meshCost }
+    mesh: type === "galfan" ? { kind: "Galfan weldmesh boxes", cols: boxCols, n10: boxCols * box10, n05: boxCols * box05, cost: meshCost }
         : type === "galvanised" ? { kind: "Galvanised sheets 2.4x4.5", areaM2: galvArea, sheets: galvSheets, cost: meshCost } : null,
     hooks: type === "galfan" ? hooks : 0,
     clips: type === "limestone" ? 0 : clips,
