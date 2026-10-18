@@ -23,7 +23,7 @@ var DEFAULT_RATES = {
   panel05x05: 4.51, panel05x1: 8.84, panel1x05: 8.50, panel1x1: 20.29, panel2x05: 16.41, panel2x1: 37.85,
   braceHook: 0.76, hooksPerLayerPerM: 2,
   // Galvanised sheets
-  sheetLength: 2.4, sheetWidth: 4.5, sheetPrice: 50,
+  sheetLength: 2.4, sheetWidth: 4.5, sheetPrice: 100,
   meshFront: 0.5, meshBack: 0.5, meshBase: 0.5, meshBaffle: 0.25, meshLid: 0.5, meshWaste: 0.10,
   clipsPerLayerPerM: 8,      // ESTIMATE
   rockLoadPrice: 1100, rockLoadTonnes: 12.5, rockDensity: 1.8, rockM3PerLayerPerM: 0.25, rockBuffer: 0.075,
