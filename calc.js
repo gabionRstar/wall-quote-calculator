@@ -114,7 +114,7 @@ function calcQuote(length, height, type, rates) {
     meshCost = type === "galfan" ? galfanPerM * L : galvSheets * r.sheetPrice;
     matCost = meshCost + clips + rockCost + geoCost; cost = matCost + gabLabour;
     // (mb*P + k*(P - C)) / P = target  =>  P = k*C / (mb + k - target)
-    var den = mb + k - targetPct; quoteEx = den > 1e-9 ? k * cost / den : NaN;
+    quoteEx = cost * (1 + (r.gabionMargin != null ? r.gabionMargin : 0.10)); // cost + 10% contractor margin
   }
   var earthTBC = L > r.earthworksMaxLength, earthEx = r.earthworksEnabled !== false && L > 0 && !earthTBC ? r.earthworksFee : 0;
   var siteEx = r.siteFeeEnabled !== false && L > 0 ? r.siteFee : 0;
